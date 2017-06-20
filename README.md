@@ -11,12 +11,12 @@ Written by Osyris and badcc
 Your src folder should mirror the roblox explorer structure.
 i.e.
 Project
-  src
-    ReplicatedStorage
-      Classes
-        Module.lua
-    ServerScriptService
-      Server.lua
-    StarterPlayer
-      StarterPlayerScripts
-        Client.lua
+->src
+--->ReplicatedStorage
+----->Classes
+------->Module.lua
+--->ServerScriptService
+----->Server.lua
+--->StarterPlayer
+----->StarterPlayerScripts
+------->Client.lua
