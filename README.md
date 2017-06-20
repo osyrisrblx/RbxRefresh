@@ -10,6 +10,7 @@ Written by Osyris and badcc
 
 Your src folder should mirror the roblox explorer structure.
 i.e.
+```
 Project
 ->src
 --->ReplicatedStorage
@@ -20,3 +21,4 @@ Project
 --->StarterPlayer
 ----->StarterPlayerScripts
 ------->Client.lua
+```
