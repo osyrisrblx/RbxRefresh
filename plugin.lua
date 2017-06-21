@@ -16,7 +16,7 @@ plugin:CreateToolbar("RbxRefresh"):CreateButton("RbxRefresh", "", "").Click:conn
 		while tag == myTag do
 			if not enabled then break end
 			print("Requesting...")
-			local source 
+			local source
 			local success, message = pcall(function()
 				source = HttpService:GetAsync(string.format("http://localhost:%s?fullUpdate=%s", PORT, isFirstReq and "true" or "false"))
 			end)
