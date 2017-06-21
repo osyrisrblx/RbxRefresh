@@ -1,78 +1,111 @@
+/*
+TODO:
+	- Sync file deletion and creation
+	- Set up process for studio to filesystem sync
+*/
+
 var chokidar = require("chokidar");
 var fs = require("fs");
 var http = require("http");
 var url = require("url");
+var path = require('path');
+var util = require('util');
 
-var sourceDir = process.argv[2];
+var SOURCE_DIR = process.argv[2];
 
 var responseQueue = [];
-var utilityFuncLua = "function setSource(...) local args = {...} local source = table.remove(args) local scriptType = table.remove(args) local amtArgs = #args local currentObject = game for i, objectName in ipairs(args) do local newObject = currentObject:FindFirstChild(objectName) if not newObject then newObject = Instance.new(i == amtArgs and scriptType or 'Folder', currentObject) newObject.Name = objectName end if i == amtArgs then newObject.Source = source end currentObject = newObject end end;";
+var SRC_UTILITY_FUNC_LUA = fs.readFileSync(
+	path.posix.resolve(
+		__dirname,
+		"templates/UtilityFuncLua.template.lua")).toString();
 
-var LUA_EXTENSION = ".lua";
+var SRC_SET_SOURCE_CALL_LUA = fs.readFileSync(
+		path.posix.resolve(
+			__dirname,
+			"templates/SetSourceCall.template.lua")).toString();
 
-function recursiveFileSearchSync(dir, rbxDir, sourceData, scriptType) {
-	if (rbxDir.length > 0) rbxDir += "', '";
-	fs.readdirSync(dir).forEach(function(fileName) {
-		var newDir = dir + "/" + fileName;
-		if (fs.statSync(newDir).isDirectory()) {
-			var newScriptType = scriptType;
-			if (fileName == "ServerScriptService") {
-				newScriptType = "Script";
-			} else if (fileName == "StarterPlayer") {
-				newScriptType = "LocalScript";
+var FSEXT_LUA = ".lua";
+
+var RBXTYPE_MODULESCRIPT = "ModuleScript"
+var RBXTYPE_LOCALSCRIPT = "LocalScript"
+var RBXTYPE_SCRIPT = "Script"
+
+function recursiveFileSearchSync(dir, outCodeLines) {
+	fs.readdirSync(dir).forEach(function(itrFileName) {
+		var itrFilePath = path.posix.resolve(dir,itrFileName);
+		if (fs.statSync(itrFilePath).isDirectory()) {
+			recursiveFileSearchSync(itrFilePath,outCodeLines);
+		} else {
+			var fileExt = path.posix.extname(itrFilePath);
+			if (fileExt == FSEXT_LUA) {
+				outCodeLines.push(updateSingleFile(itrFilePath));
 			}
-			recursiveFileSearchSync(newDir, rbxDir + fileName, sourceData, newScriptType);
-		} else if (fileName.substr(fileName.length - LUA_EXTENSION.length, fileName.length) == LUA_EXTENSION) {
-			var code = fs.readFileSync(newDir).toString();
-			sourceData.push("setSource('" + rbxDir + fileName.substr(0, fileName.length - LUA_EXTENSION.length) + "', '" + scriptType + "', [===[" + code + "]===]);");
 		}
 	});
 }
 
 function updateAllFiles() {
-	var sourceData = [];
-	recursiveFileSearchSync(sourceDir, "", sourceData, "ModuleScript");
-	return sourceData.join("\n");
+	var outCodeLines = [];
+	recursiveFileSearchSync(SOURCE_DIR, outCodeLines);
+	return outCodeLines.join("\n");
 }
 
-function updateSingleFile(path) {
-	var rbxPath = path;
-	var fileExtension = rbxPath.match("(\\.\\w+)$")[1];
-	rbxPath = rbxPath.match("src\\\\(.+)")[1];
-	rbxPath = rbxPath.substr(0, rbxPath.length - fileExtension.length);
-	rbxPath = rbxPath.split("\\").join("', '");
-	var code;
-	if (fileExtension == LUA_EXTENSION) {
-		code = fs.readFileSync(path).toString();
+function updateSingleFile(filepath) {
+	var fileExt = path.posix.extname(filepath);
+	if (fileExt != FSEXT_LUA) {
+		return "";
 	}
-	var scriptType = "ModuleScript";
-	if (rbxPath.indexOf("ServerScriptService") != -1) {
-		scriptType = "Script";
-	} else if (rbxPath.indexOf("StarterPlayer") != -1) {
-		scriptType = "LocalScript";
+
+	var assetFullName = path.posix.basename(filepath,FSEXT_LUA);
+	var assetRbxName = "";
+	var assetRbxType = path.posix.extname(assetFullName).replace(".","");
+
+	if (assetRbxType == "") {
+		if (filepath.indexOf("ServerScriptService") != -1) {
+			assetRbxType = RBXTYPE_SCRIPT;
+		} else if (filepath.indexOf("StarterPlayer") != -1) {
+			assetRbxType = RBXTYPE_LOCALSCRIPT;
+		} else {
+			assetRbxType = RBXTYPE_MODULESCRIPT;
+		}
+		assetRbxName = assetFullName;
+
+	} else {
+		assetRbxName = path.posix.basename(assetFullName,"." + assetRbxType)
 	}
-	return "setSource('" + rbxPath + "', '" + scriptType + "', [===[" + code + "]===])";
+
+	var relativeFilepathArray = path.posix.relative(SOURCE_DIR,filepath).split(path.posix.sep);
+	relativeFilepathArray.pop();
+
+	var fileContents = fs.readFileSync(filepath).toString();
+
+	return util.format(
+		SRC_SET_SOURCE_CALL_LUA,
+		assetRbxName,
+		assetRbxType,
+		"{" + relativeFilepathArray.map(function(x) { return "\"" + x + "\"" }).join() + "}",
+		fileContents);
 }
 
-var fullUpdate = false;
+var fullUpdateNext = false;
+var hasInitialFullUpdated = false;
 
-function onUpdate(path) {
-	console.log(path.match("src\\\\(.+)")[1] + " changed! Compiling..");
-	
-	var code;
-	if (fullUpdate) {
-		console.log("Full update requested")
-		fullUpdate = false;
+function onUpdate(filepath) {
+	var wasFullUpdate = fullUpdateNext;
+	var code = "";
+	if (fullUpdateNext) {
+		fullUpdateNext = false;
 		code = updateAllFiles();
 	} else {
-		code = updateSingleFile(path);
+		code = updateSingleFile(filepath);
 	}
 
 	while (responseQueue.length > 0) {
-		console.log("Injected!");
+		console.log(util.format("file(%s) fullUpdate(%s) changed, sending...",filepath,wasFullUpdate.toString()));
+
 		with (responseQueue.shift()) {
 			writeHead(200, {"Content-Type": "text/plain"});
-			end(utilityFuncLua + code + "print('Injection Complete')");
+			end(SRC_UTILITY_FUNC_LUA + code + "print('Injection Complete')");
 		}
 	}
 }
@@ -83,20 +116,29 @@ function onRequest(req, res) {
 		process.exit();
 		return;
 	}
+
+	if (hasInitialFullUpdated == false) {
+		responseQueue.push(res);
+		hasInitialFullUpdated = true;
+		fullUpdateNext = true;
+		onUpdate(SOURCE_DIR);
+		return;
+	}
+
 	if (args.fullUpdate == "true") {
-		fullUpdate = true;
+		fullUpdateNext = true;
 	}
 	responseQueue.push(res);
 }
 
 function setupServer() {
 	http.createServer(onRequest).listen(8888, "0.0.0.0");
-	chokidar.watch(sourceDir, {
+	chokidar.watch(SOURCE_DIR, {
 		ignored: /[\/\\]\./,
 		persistent: true
 	}).on("change", onUpdate);
 
-	console.log("RbxRefresh running on " + sourceDir);
+	console.log(util.format("RbxRefresh running on dir(%s)",SOURCE_DIR));
 }
 
 http.get("http://localhost:8888?kill=true").on("error", (e) => {});
