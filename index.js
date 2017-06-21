@@ -1,3 +1,9 @@
+/*
+TODO:
+	- Sync file deletion and creation
+	- Set up process for studio to filesystem sync
+*/
+
 var chokidar = require("chokidar");
 var fs = require("fs");
 var http = require("http");
@@ -41,7 +47,7 @@ function recursiveFileSearchSync(dir, outCodeLines) {
 function updateAllFiles() {
 	var outCodeLines = [];
 	recursiveFileSearchSync(SOURCE_DIR, outCodeLines);
-	return outCodeLines.join(";\n");
+	return outCodeLines.join("\n");
 }
 
 function updateSingleFile(filepath) {
@@ -105,6 +111,12 @@ function onUpdate(filepath) {
 }
 
 function onRequest(req, res) {
+	var args = url.parse(req.url, true).query;
+	if (args.kill == "true") {
+		process.exit();
+		return;
+	}
+
 	if (hasInitialFullUpdated == false) {
 		responseQueue.push(res);
 		hasInitialFullUpdated = true;
@@ -113,11 +125,6 @@ function onRequest(req, res) {
 		return;
 	}
 
-	var args = url.parse(req.url, true).query;
-	if (args.kill == "true") {
-		process.exit();
-		return;
-	}
 	if (args.fullUpdate == "true") {
 		fullUpdateNext = true;
 	}
