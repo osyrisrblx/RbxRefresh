@@ -15,12 +15,12 @@ var SOURCE_DIR = process.argv[2];
 
 var responseQueue = [];
 var SRC_UTILITY_FUNC_LUA = fs.readFileSync(
-	path.posix.resolve(
+	path.resolve(
 		__dirname,
 		"templates/UtilityFuncLua.template.lua")).toString();
 
 var SRC_SET_SOURCE_CALL_LUA = fs.readFileSync(
-		path.posix.resolve(
+		path.resolve(
 			__dirname,
 			"templates/SetSourceCall.template.lua")).toString();
 
@@ -32,11 +32,11 @@ var RBXTYPE_SCRIPT = "Script"
 
 function recursiveFileSearchSync(dir, outCodeLines) {
 	fs.readdirSync(dir).forEach(function(itrFileName) {
-		var itrFilePath = path.posix.resolve(dir,itrFileName);
+		var itrFilePath = path.resolve(dir, itrFileName);
 		if (fs.statSync(itrFilePath).isDirectory()) {
-			recursiveFileSearchSync(itrFilePath,outCodeLines);
+			recursiveFileSearchSync(itrFilePath, outCodeLines);
 		} else {
-			var fileExt = path.posix.extname(itrFilePath);
+			var fileExt = path.extname(itrFilePath);
 			if (fileExt == FSEXT_LUA) {
 				outCodeLines.push(updateSingleFile(itrFilePath));
 			}
@@ -51,14 +51,14 @@ function updateAllFiles() {
 }
 
 function updateSingleFile(filepath) {
-	var fileExt = path.posix.extname(filepath);
+	var fileExt = path.extname(filepath);
 	if (fileExt != FSEXT_LUA) {
 		return "";
 	}
 
-	var assetFullName = path.posix.basename(filepath,FSEXT_LUA);
+	var assetFullName = path.basename(filepath, FSEXT_LUA);
 	var assetRbxName = "";
-	var assetRbxType = path.posix.extname(assetFullName).replace(".","");
+	var assetRbxType = path.extname(assetFullName).replace(".", "");
 
 	if (assetRbxType == "") {
 		if (filepath.indexOf("ServerScriptService") != -1) {
@@ -71,10 +71,10 @@ function updateSingleFile(filepath) {
 		assetRbxName = assetFullName;
 
 	} else {
-		assetRbxName = path.posix.basename(assetFullName,"." + assetRbxType)
+		assetRbxName = path.basename(assetFullName, "." + assetRbxType)
 	}
 
-	var relativeFilepathArray = path.posix.relative(SOURCE_DIR,filepath).split(path.posix.sep);
+	var relativeFilepathArray = path.relative(SOURCE_DIR, filepath).split(path.sep);
 	relativeFilepathArray.pop();
 
 	var fileContents = fs.readFileSync(filepath).toString();
@@ -100,9 +100,8 @@ function onUpdate(filepath) {
 		code = updateSingleFile(filepath);
 	}
 
+	console.log(util.format("file(%s) fullUpdate(%s) changed, sending...", filepath, wasFullUpdate.toString()));
 	while (responseQueue.length > 0) {
-		console.log(util.format("file(%s) fullUpdate(%s) changed, sending...",filepath,wasFullUpdate.toString()));
-
 		with (responseQueue.shift()) {
 			writeHead(200, {"Content-Type": "text/plain"});
 			end(SRC_UTILITY_FUNC_LUA + code + "print('Injection Complete')");
@@ -137,8 +136,7 @@ function setupServer() {
 		ignored: /[\/\\]\./,
 		persistent: true
 	}).on("change", onUpdate);
-
-	console.log(util.format("RbxRefresh running on dir(%s)",SOURCE_DIR));
+	console.log(util.format("RbxRefresh running on dir(%s)", SOURCE_DIR));
 }
 
 http.get("http://localhost:8888?kill=true").on("error", (e) => {});
