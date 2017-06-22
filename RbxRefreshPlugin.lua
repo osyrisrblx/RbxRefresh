@@ -12,13 +12,13 @@ plugin:CreateToolbar("RbxRefresh"):CreateButton("RbxRefresh", "", "").Click:conn
 	enabled = not enabled
 	if enabled then
 		print("Running on localhost port " .. PORT)
-		local isFirstReq = true
+
 		while tag == myTag do
 			if not enabled then break end
 			print("Requesting...")
 			local source
 			local success, message = pcall(function()
-				source = HttpService:GetAsync(string.format("http://localhost:%s?fullUpdate=%s", PORT, isFirstReq and "true" or "false"))
+				source = HttpService:GetAsync(string.format("http://localhost:%s", PORT))
 			end)
 			if not success then
 				local lowerMessage = string.lower(message)
@@ -30,9 +30,15 @@ plugin:CreateToolbar("RbxRefresh"):CreateButton("RbxRefresh", "", "").Click:conn
 					wait(1)
 				end
 			else
-				loadstring(source)()
+				local suc,err = pcall(function()
+					loadstring(source)()
+				end)
+				if not suc then
+					warn("ERR:" .. err)
+					warn(source)
+				end
 			end
-			isFirstReq = false
+
 			wait(0.1)
 		end
 	else

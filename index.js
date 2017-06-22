@@ -1,9 +1,3 @@
-/*
-TODO:
-	- Sync file deletion and creation
-	- Set up process for studio to filesystem sync
-*/
-
 var chokidar = require("chokidar");
 var fs = require("fs");
 var http = require("http");
@@ -13,16 +7,35 @@ var util = require('util');
 
 var SOURCE_DIR = process.argv[2];
 
-var responseQueue = [];
+var __launch_sync_to_fs = false;
+if (process.argv[3]) {
+	__launch_sync_to_fs = (process.argv[3] == "sync_to_fs")
+}
+
 var SRC_UTILITY_FUNC_LUA = fs.readFileSync(
 	path.resolve(
 		__dirname,
 		"templates/UtilityFuncLua.template.lua")).toString();
 
 var SRC_SET_SOURCE_CALL_LUA = fs.readFileSync(
-		path.resolve(
-			__dirname,
-			"templates/SetSourceCall.template.lua")).toString();
+	path.resolve(
+		__dirname,
+		"templates/SetSourceCall.template.lua")).toString();
+
+var SRC_REMOVE_FILE_CALL_LUA = fs.readFileSync(
+	path.resolve(
+		__dirname,
+		"templates/RemoveFileCall.template.lua")).toString()
+
+var SRC_PRINT_LUA = fs.readFileSync(
+	path.resolve(
+		__dirname,
+		"templates/Print.template.lua")).toString()
+
+var SRC_SYNC_TO_FS_LUA = fs.readFileSync(
+	path.resolve(
+		__dirname,
+		"templates/SyncToFs.template.lua")).toString()
 
 var FSEXT_LUA = ".lua";
 
@@ -30,32 +43,39 @@ var RBXTYPE_MODULESCRIPT = "ModuleScript"
 var RBXTYPE_LOCALSCRIPT = "LocalScript"
 var RBXTYPE_SCRIPT = "Script"
 
-function recursiveFileSearchSync(dir, outCodeLines) {
+function generateUpdateAllFilesCode_rTraversal(dir, outCodeLines) {
 	fs.readdirSync(dir).forEach(function(itrFileName) {
 		var itrFilePath = path.resolve(dir, itrFileName);
 		if (fs.statSync(itrFilePath).isDirectory()) {
-			recursiveFileSearchSync(itrFilePath, outCodeLines);
+			generateUpdateAllFilesCode_rTraversal(itrFilePath, outCodeLines);
 		} else {
 			var fileExt = path.extname(itrFilePath);
 			if (fileExt == FSEXT_LUA) {
-				outCodeLines.push(updateSingleFile(itrFilePath));
+				outCodeLines.push(generateUpdateFileCode(itrFilePath));
 			}
 		}
 	});
 }
 
-function updateAllFiles() {
+function generateUpdateAllFilesCodeLines(dir) {
 	var outCodeLines = [];
-	recursiveFileSearchSync(SOURCE_DIR, outCodeLines);
-	return outCodeLines.join("\n");
+	generateUpdateAllFilesCode_rTraversal(dir, outCodeLines);
+	return outCodeLines;
 }
 
-function updateSingleFile(filepath) {
-	var fileExt = path.extname(filepath);
-	if (fileExt != FSEXT_LUA) {
-		return "";
-	}
+function jsArrayToLuaArrayString(jsarray) {
+	return "{" + jsarray.map(function(x) { return "\"" + x + "\"" }).join() + "}";
+}
 
+function matchAssetRbxType(str) {
+	if (str == RBXTYPE_LOCALSCRIPT) { return RBXTYPE_LOCALSCRIPT; }
+	if (str == RBXTYPE_SCRIPT) { return RBXTYPE_SCRIPT; }
+	if (str == RBXTYPE_MODULESCRIPT) { return RBXTYPE_MODULESCRIPT; }
+	console.warn("Unknown file subext:"+str);
+	return RBXTYPE_MODULESCRIPT;
+}
+
+function getAssetRbxInfoFromFilepath(filepath) {
 	var assetFullName = path.basename(filepath, FSEXT_LUA);
 	var assetRbxName = "";
 	var assetRbxType = path.extname(assetFullName).replace(".", "");
@@ -71,41 +91,80 @@ function updateSingleFile(filepath) {
 		assetRbxName = assetFullName;
 
 	} else {
-		assetRbxName = path.basename(assetFullName, "." + assetRbxType)
+		assetRbxName = path.basename(assetFullName, "." + assetRbxType);
+		assetRbxType = matchAssetRbxType(assetRbxType);
 	}
 
 	var relativeFilepathArray = path.relative(SOURCE_DIR, filepath).split(path.sep);
 	relativeFilepathArray.pop();
 
-	var fileContents = fs.readFileSync(filepath).toString();
+	return {
+		RbxName: assetRbxName,
+		RbxType: assetRbxType,
+		RbxPath: relativeFilepathArray
+	}
+}
 
+function generateUpdateFileCode(filepath) {
+	var fileExt = path.extname(filepath);
+	if (fileExt != FSEXT_LUA) {
+		return "";
+	}
+	var assetInfo = getAssetRbxInfoFromFilepath(filepath);
+	var fileContents = fs.readFileSync(filepath).toString();
 	return util.format(
 		SRC_SET_SOURCE_CALL_LUA,
-		assetRbxName,
-		assetRbxType,
-		"{" + relativeFilepathArray.map(function(x) { return "\"" + x + "\"" }).join() + "}",
+		assetInfo.RbxName,
+		assetInfo.RbxType,
+		jsArrayToLuaArrayString(assetInfo.RbxPath),
 		fileContents);
 }
 
-var fullUpdateNext = false;
-var hasInitialFullUpdated = false;
+function requestSendAddFilepath(filepath) {
+	var code = generateUpdateFileCode(filepath);
 
-function onUpdate(filepath) {
-	var wasFullUpdate = fullUpdateNext;
-	var code = "";
-	if (fullUpdateNext) {
-		fullUpdateNext = false;
-		code = updateAllFiles();
+	var assetInfo = getAssetRbxInfoFromFilepath(filepath);
+	var debugOutput = util.format("---setSource(%s,%s,[%s])",assetInfo.RbxName,assetInfo.RbxType,assetInfo.RbxPath.join())
+
+	console.log(debugOutput)
+	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + ";" + SRC_UTILITY_FUNC_LUA + ";" + code + ";" + util.format(SRC_PRINT_LUA, "--- Completed"));
+}
+
+function requestSendRemoveFilepath(filepath) {
+	var assetInfo = getAssetRbxInfoFromFilepath(filepath);
+	var debugOutput = util.format("---removeFile(%s,%s,[%s])",assetInfo.RbxName,assetInfo.RbxType,assetInfo.RbxPath.join());
+
+	var code = util.format(
+		SRC_REMOVE_FILE_CALL_LUA,
+		assetInfo.RbxName,
+		assetInfo.RbxType,
+		jsArrayToLuaArrayString(assetInfo.RbxPath));
+
+	console.log(debugOutput)
+	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + ";" + SRC_UTILITY_FUNC_LUA + ";" + code + ";" + util.format(SRC_PRINT_LUA, "--- Completed"));
+}
+
+function requestSendFullUpdate(dir) {
+	var code = generateUpdateAllFilesCodeLines(dir).join(";");
+
+	var debugOutput = util.format("---fullUpdate()")
+	console.log(debugOutput)
+	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + ";" + SRC_UTILITY_FUNC_LUA + ";" + code + ";" + util.format(SRC_PRINT_LUA, "--- Completed"));
+}
+
+var _requestQueue = [];
+var _sendQueue = [];
+
+function writeCodeToRequest(code,request) {
+	request.writeHead(200, {"Content-Type": "text/plain"});
+	request.end(code);
+}
+
+function sendSource(code) {
+	if (_requestQueue.length > 0) {
+		writeCodeToRequest(code,_requestQueue.shift());
 	} else {
-		code = updateSingleFile(filepath);
-	}
-
-	console.log(util.format("file(%s) fullUpdate(%s) changed, sending...", filepath, wasFullUpdate.toString()));
-	while (responseQueue.length > 0) {
-		with (responseQueue.shift()) {
-			writeHead(200, {"Content-Type": "text/plain"});
-			end(SRC_UTILITY_FUNC_LUA + code + "print('Injection Complete')");
-		}
+		_sendQueue.push(code);
 	}
 }
 
@@ -115,29 +174,37 @@ function onRequest(req, res) {
 		process.exit();
 		return;
 	}
-
-	if (hasInitialFullUpdated == false) {
-		responseQueue.push(res);
-		hasInitialFullUpdated = true;
-		fullUpdateNext = true;
-		onUpdate(SOURCE_DIR);
-		return;
+	if (_sendQueue.length > 0) {
+		writeCodeToRequest(_sendQueue.shift(),res)
+	} else {
+		_requestQueue.push(res);
 	}
-
-	if (args.fullUpdate == "true") {
-		fullUpdateNext = true;
-	}
-	responseQueue.push(res);
-}
-
-function setupServer() {
-	http.createServer(onRequest).listen(8888, "0.0.0.0");
-	chokidar.watch(SOURCE_DIR, {
-		ignored: /[\/\\]\./,
-		persistent: true
-	}).on("change", onUpdate);
-	console.log(util.format("RbxRefresh running on dir(%s)", SOURCE_DIR));
 }
 
 http.get("http://localhost:8888?kill=true").on("error", (e) => {});
-setTimeout(setupServer, 1000);
+setTimeout(function() {
+	http.createServer(onRequest).listen(8888, "0.0.0.0");
+	if (__launch_sync_to_fs) {
+
+		return;
+	}
+
+	console.log(util.format("RbxRefresh running on dir(%s)", SOURCE_DIR));
+	requestSendFullUpdate(SOURCE_DIR);
+
+	chokidar.watch(SOURCE_DIR, {
+		ignored: /[\/\\]\./,
+		persistent: true
+	})
+	.on("change", function(filepath) {
+		requestSendAddFilepath(filepath);
+	})
+	.on("add",function(filepath) {
+		requestSendAddFilepath(filepath);
+	})
+	.on("unlink",function(filepath) {
+		requestSendRemoveFilepath(filepath);
+		requestSendFullUpdate(SOURCE_DIR);
+	});
+
+}, 1000);
