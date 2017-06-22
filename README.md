@@ -1,8 +1,6 @@
 # RbxRefresh
 Mirrors a local file structure to ROBLOX Studio. 
 
-Written by Osyris and badcc
-
 ## Usage
 1. Install plugin
 2. Install NodeJS
