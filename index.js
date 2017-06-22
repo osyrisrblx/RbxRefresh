@@ -1,16 +1,27 @@
+#!/usr/bin/env node
+
 var chokidar = require("chokidar");
 var fs = require("fs");
 var http = require("http");
 var url = require("url");
-var path = require('path');
-var util = require('util');
+var path = require("path");
+var util = require("util");
 
-var SOURCE_DIR = process.argv[2];
+var SOURCE_DIR;
 
-var __launch_sync_to_fs = false;
-if (process.argv[3]) {
-	__launch_sync_to_fs = (process.argv[3] == "sync_to_fs")
-}
+var pkgjson = require("./package.json");
+var program = require("commander");
+program
+	.version(pkgjson.version)
+	.usage("rbxrefresh [options] <dir>")
+	.arguments("<dir>")
+	.option("-s, --sync", "Enables sync to filesystem")
+	.action(function(env) {
+		SOURCE_DIR = env;
+	})
+	.parse(process.argv);
+
+console.log(program.sync)
 
 var SRC_UTILITY_FUNC_LUA = fs.readFileSync(
 	path.resolve(
@@ -71,7 +82,7 @@ function matchAssetRbxType(str) {
 	if (str == RBXTYPE_LOCALSCRIPT) { return RBXTYPE_LOCALSCRIPT; }
 	if (str == RBXTYPE_SCRIPT) { return RBXTYPE_SCRIPT; }
 	if (str == RBXTYPE_MODULESCRIPT) { return RBXTYPE_MODULESCRIPT; }
-	console.warn("Unknown file subext:"+str);
+	console.warn("Unknown file subext:" + str);
 	return RBXTYPE_MODULESCRIPT;
 }
 
@@ -182,10 +193,10 @@ function onRequest(req, res) {
 }
 
 http.get("http://localhost:8888?kill=true").on("error", (e) => {});
+
 setTimeout(function() {
 	http.createServer(onRequest).listen(8888, "0.0.0.0");
-	if (__launch_sync_to_fs) {
-
+	if (program.sync) {
 		return;
 	}
 
@@ -206,5 +217,4 @@ setTimeout(function() {
 		requestSendRemoveFilepath(filepath);
 		requestSendFullUpdate(SOURCE_DIR);
 	});
-
 }, 1000);
