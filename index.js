@@ -21,36 +21,34 @@ program
 	})
 	.parse(process.argv);
 
-var SRC_UTILITY_FUNC_LUA = fs.readFileSync(
-	path.resolve(
-		__dirname,
-		"templates/UtilityFuncLua.template.lua")).toString();
+function getTemplate(templatePath) {
+	return fs.readFileSync(path.resolve(__dirname, templatePath));
+}
 
-var SRC_SET_SOURCE_CALL_LUA = fs.readFileSync(
-	path.resolve(
-		__dirname,
-		"templates/SetSourceCall.template.lua")).toString();
-
-var SRC_REMOVE_FILE_CALL_LUA = fs.readFileSync(
-	path.resolve(
-		__dirname,
-		"templates/RemoveFileCall.template.lua")).toString()
-
-var SRC_PRINT_LUA = fs.readFileSync(
-	path.resolve(
-		__dirname,
-		"templates/Print.template.lua")).toString()
-
-var SRC_SYNC_TO_FS_LUA = fs.readFileSync(
-	path.resolve(
-		__dirname,
-		"templates/SyncToFs.template.lua")).toString()
+var SRC_UTILITY_FUNC_LUA = getTemplate("templates/UtilityFuncLua.template.lua");
+var SRC_SET_SOURCE_CALL_LUA = getTemplate("templates/SetSourceCall.template.lua");
+var SRC_REMOVE_FILE_CALL_LUA = getTemplate("templates/RemoveFileCall.template.lua");
+var SRC_PRINT_LUA = getTemplate("templates/Print.template.lua");
+var SRC_SYNC_TO_FS_LUA = getTemplate("templates/SyncToFs.template.lua");
 
 var FSEXT_LUA = ".lua";
+
+var RBXTYPE_MODULESCRIPT_ALIASES = ["ModuleScript", "module"];
+var RBXTYPE_LOCALSCRIPT_ALIASES = ["LocalScript", "local", "client"];
+var RBXTYPE_SCRIPT_ALIASES = ["Script", "server", ""];
 
 var RBXTYPE_MODULESCRIPT = "ModuleScript"
 var RBXTYPE_LOCALSCRIPT = "LocalScript"
 var RBXTYPE_SCRIPT = "Script"
+
+function isAliasOf(str, aliases) {
+	for (var i = 0; i < aliases.length; i++) {
+		if (aliases[i].toLowerCase() == str.toLowerCase()) {
+			return true;
+		}
+	}
+	return false;
+}
 
 function generateUpdateAllFilesCode_rTraversal(dir, outCodeLines) {
 	fs.readdirSync(dir).forEach(function(itrFileName) {
@@ -77,11 +75,16 @@ function jsArrayToLuaArrayString(jsarray) {
 }
 
 function matchAssetRbxType(str) {
-	if (str == RBXTYPE_LOCALSCRIPT) { return RBXTYPE_LOCALSCRIPT; }
-	if (str == RBXTYPE_SCRIPT) { return RBXTYPE_SCRIPT; }
-	if (str == RBXTYPE_MODULESCRIPT) { return RBXTYPE_MODULESCRIPT; }
-	console.warn("Unknown file subext:" + str);
-	return RBXTYPE_MODULESCRIPT;
+	if (isAliasOf(str, RBXTYPE_LOCALSCRIPT_ALIASES)) {
+		return RBXTYPE_LOCALSCRIPT;
+	} else if (isAliasOf(str, RBXTYPE_SCRIPT_ALIASES)) {
+		return RBXTYPE_SCRIPT_ALIASES;
+	} else if (isAliasOf(str, RBXTYPE_MODULESCRIPT_ALIASES)) {
+		return RBXTYPE_MODULESCRIPT;
+	} else {
+		console.warn("Unknown file subext:" + str);
+		return RBXTYPE_MODULESCRIPT;
+	}
 }
 
 function getAssetRbxInfoFromFilepath(filepath) {
