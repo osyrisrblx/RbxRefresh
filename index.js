@@ -21,8 +21,6 @@ program
 	})
 	.parse(process.argv);
 
-console.log(program.sync)
-
 var SRC_UTILITY_FUNC_LUA = fs.readFileSync(
 	path.resolve(
 		__dirname,
