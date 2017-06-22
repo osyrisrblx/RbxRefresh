@@ -1,8 +1,3 @@
-/*
-TODO:
-	- Set up process for studio to filesystem sync
-*/
-
 var chokidar = require("chokidar");
 var fs = require("fs");
 var http = require("http");
@@ -36,6 +31,11 @@ var SRC_PRINT_LUA = fs.readFileSync(
 	path.resolve(
 		__dirname,
 		"templates/Print.template.lua")).toString()
+
+var SRC_SYNC_TO_FS_LUA = fs.readFileSync(
+	path.resolve(
+		__dirname,
+		"templates/SyncToFs.template.lua")).toString()
 
 var FSEXT_LUA = ".lua";
 
@@ -188,7 +188,7 @@ setTimeout(function() {
 
 		return;
 	}
-	
+
 	console.log(util.format("RbxRefresh running on dir(%s)", SOURCE_DIR));
 	requestSendFullUpdate(SOURCE_DIR);
 
