@@ -6,6 +6,9 @@ var http = require("http");
 var url = require("url");
 var path = require("path");
 var util = require("util");
+var zlib = require('zlib');
+var SyncFS = require("./SyncFS")
+var Util = require("./Util")
 
 var SOURCE_DIR;
 
@@ -31,15 +34,15 @@ var SRC_REMOVE_FILE_CALL_LUA = getTemplate("templates/RemoveFileCall.template.lu
 var SRC_PRINT_LUA = getTemplate("templates/Print.template.lua");
 var SRC_SYNC_TO_FS_LUA = getTemplate("templates/SyncToFs.template.lua");
 
-var FSEXT_LUA = ".lua";
+var FSEXT_LUA = Util.FSEXT_LUA;
 
 var RBXTYPE_MODULESCRIPT_ALIASES = ["ModuleScript", "module"];
 var RBXTYPE_LOCALSCRIPT_ALIASES = ["LocalScript", "local", "client"];
 var RBXTYPE_SCRIPT_ALIASES = ["Script", "server", ""];
 
-var RBXTYPE_MODULESCRIPT = "ModuleScript"
-var RBXTYPE_LOCALSCRIPT = "LocalScript"
-var RBXTYPE_SCRIPT = "Script"
+var RBXTYPE_MODULESCRIPT = Util.RBXTYPE_MODULESCRIPT
+var RBXTYPE_LOCALSCRIPT = Util.RBXTYPE_LOCALSCRIPT
+var RBXTYPE_SCRIPT = Util.RBXTYPE_SCRIPT
 
 function isAliasOf(str, aliases) {
 	for (var i = 0; i < aliases.length; i++) {
@@ -181,7 +184,30 @@ function sendSource(code) {
 	}
 }
 
+var _sync_fs_json = "";
+
 function onRequest(req, res) {
+	if (req.method == 'POST') {
+		var buffer = "";
+		req.on('data', function (data) {
+				buffer += data;
+		});
+		req.on('end', function () {
+			res.writeHead(200, {'Content-Type': 'text/html'});
+			res.end('ok');
+
+			if (buffer == "$$END$$") {
+				var obj_root = JSON.parse(_sync_fs_json.toString());
+				SyncFS.SyncSourceDirFromObj(SOURCE_DIR,obj_root);
+				process.exit();
+			} else {
+				console.log("SYNC_FS_BUFFER + ",buffer.length)
+				_sync_fs_json += buffer;
+			}
+		});
+		return;
+	}
+
 	var args = url.parse(req.url, true).query;
 	if (args.kill == "true") {
 		process.exit();
@@ -199,6 +225,7 @@ http.get("http://localhost:8888?kill=true").on("error", (e) => {});
 setTimeout(function() {
 	http.createServer(onRequest).listen(8888, "0.0.0.0");
 	if (program.sync) {
+		sendSource(SRC_SYNC_TO_FS_LUA);
 		return;
 	}
 
