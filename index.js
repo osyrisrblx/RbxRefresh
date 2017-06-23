@@ -239,15 +239,12 @@ setTimeout(function() {
 		ignoreInitial: true
 	})
 	.on("change", function(filepath) {
-		console.log("change",filepath)
 		requestSendAddFilepath(filepath);
 	})
 	.on("add",function(filepath) {
-		console.log("add",filepath)
 		requestSendAddFilepath(filepath);
 	})
 	.on("unlink",function(filepath) {
-		console.log("unlink",filepath)
 		requestSendRemoveFilepath(filepath);
 		requestSendFullUpdate(SOURCE_DIR);
 	});
