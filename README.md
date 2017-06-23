@@ -3,15 +3,12 @@ With RbxRefresh, you can use external editors (Like Sublime Text 3 or Atom) for 
 RbxRefresh syncs your changes back into studio every time you save your files locally.
 
 ## Prerequisites
-1. NodeJS
-2. NPM (Node Package Manager)
-3. ROBLOX Studio
-4. [RbxRefresh Studio Plugin](https://www.roblox.com/library/852039069/RbxRefresh)
+1. [NodeJS](https://nodejs.org/)
 
 ## Usage
 1. `npm install rbxrefresh -g`
 2. `rbxrefresh SOURCE_DIRECTORY`
-3. [Enable Studio Plugin](https://www.roblox.com/library/852039069/RbxRefresh)
+3. [Install and enable RbxRefresh Studio Plugin](https://www.roblox.com/library/852039069/RbxRefresh)
 4. Make changes and save.
 
 Your source folder should mirror the roblox explorer structure. i.e.
