@@ -28,7 +28,7 @@ function traverseRbxPathArray(rbxPathArray)
     local hasTypeInfo, itrName, itrType = rbxPathElementHasTypeInfo(rbxPathArray[i])
     local itrTarget = currentDir:FindFirstChild(itrName)
     if hasTypeInfo == true and itrTarget ~= nil and itrTarget.ClassName ~= itrType then
-      print("Traverse Removing Existing(".. itrTarget:GetFullName() ..")",itrTarget.ClassName,itrType)
+      print("[RbxRefresh] traverseRbxPathArray Removing Existing(".. itrTarget:GetFullName() ..")",itrTarget.ClassName,itrType)
       itrTarget:Destroy()
       itrTarget = nil
     end
@@ -36,7 +36,7 @@ function traverseRbxPathArray(rbxPathArray)
     if itrTarget == nil then
       local newFolder = Instance.new(itrType,currentDir)
       newFolder.Name = itrName
-      print("Creating ".. itrType .. "(".. newFolder:GetFullName() ..")")
+      print("[RbxRefresh] Creating ".. itrType .. "(".. newFolder:GetFullName() ..")")
     end
 
     currentDir = currentDir:FindFirstChild(itrName)
@@ -48,14 +48,14 @@ function setSource(assetRbxName, assetRbxType, rbxPathArray, fileContents)
   local currentDir = traverseRbxPathArray(rbxPathArray)
   local targetFile = currentDir:FindFirstChild(assetRbxName)
   if targetFile ~= nil and targetFile.ClassName ~= assetRbxType then
-    print("Removing Existing(".. targetFile:GetFullName() ..")",targetFile.ClassName,assetRbxType)
+    print("[RbxRefresh] Removing Existing(".. targetFile:GetFullName() ..")",targetFile.ClassName,assetRbxType)
     targetFile:Destroy()
     targetFile = nil
   end
   if targetFile == nil then
     targetFile = Instance.new(assetRbxType,currentDir)
     targetFile.Name = assetRbxName
-    print("Creating(".. targetFile:GetFullName() ..")")
+    print("[RbxRefresh] Creating(".. targetFile:GetFullName() ..")")
   end
   targetFile.Source = fileContents
 end
@@ -64,7 +64,7 @@ function removeFile(assetRbxName, assetRbxType, rbxPathArray)
   local currentDir = traverseRbxPathArray(rbxPathArray)
   for _,child in pairs(currentDir:GetChildren()) do
     if child.Name == assetRbxName and child.ClassName == assetRbxType then
-      print("Removing("..child:GetFullName()..")",child.ClassName)
+      print("[RbxRefresh] Removing("..child:GetFullName()..")",child.ClassName)
       child:Destroy()
     end
   end

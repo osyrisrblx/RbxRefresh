@@ -6,6 +6,9 @@ var http = require("http");
 var url = require("url");
 var path = require("path");
 var util = require("util");
+var zlib = require('zlib');
+var SyncFS = require("./SyncFS")
+var Util = require("./Util")
 
 var SOURCE_DIR;
 
@@ -31,15 +34,15 @@ var SRC_REMOVE_FILE_CALL_LUA = getTemplate("templates/RemoveFileCall.template.lu
 var SRC_PRINT_LUA = getTemplate("templates/Print.template.lua");
 var SRC_SYNC_TO_FS_LUA = getTemplate("templates/SyncToFs.template.lua");
 
-var FSEXT_LUA = ".lua";
+var FSEXT_LUA = Util.FSEXT_LUA;
 
 var RBXTYPE_MODULESCRIPT_ALIASES = ["ModuleScript", "module"];
 var RBXTYPE_LOCALSCRIPT_ALIASES = ["LocalScript", "local", "client"];
 var RBXTYPE_SCRIPT_ALIASES = ["Script", "server", ""];
 
-var RBXTYPE_MODULESCRIPT = "ModuleScript"
-var RBXTYPE_LOCALSCRIPT = "LocalScript"
-var RBXTYPE_SCRIPT = "Script"
+var RBXTYPE_MODULESCRIPT = Util.RBXTYPE_MODULESCRIPT
+var RBXTYPE_LOCALSCRIPT = Util.RBXTYPE_LOCALSCRIPT
+var RBXTYPE_SCRIPT = Util.RBXTYPE_SCRIPT
 
 function isAliasOf(str, aliases) {
 	for (var i = 0; i < aliases.length; i++) {
@@ -137,15 +140,15 @@ function requestSendAddFilepath(filepath) {
 	var code = generateUpdateFileCode(filepath);
 
 	var assetInfo = getAssetRbxInfoFromFilepath(filepath);
-	var debugOutput = util.format("---setSource(%s,%s,[%s])",assetInfo.RbxName,assetInfo.RbxType,assetInfo.RbxPath.join())
+	var debugOutput = util.format("[RbxRefresh] setSource(%s,%s,[%s])",assetInfo.RbxName,assetInfo.RbxType,assetInfo.RbxPath.join())
 
 	console.log(debugOutput)
-	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + ";" + SRC_UTILITY_FUNC_LUA + ";" + code + ";" + util.format(SRC_PRINT_LUA, "--- Completed"));
+	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + ";" + SRC_UTILITY_FUNC_LUA + ";" + code + ";" + util.format(SRC_PRINT_LUA, "[RbxRefresh] Completed"));
 }
 
 function requestSendRemoveFilepath(filepath) {
 	var assetInfo = getAssetRbxInfoFromFilepath(filepath);
-	var debugOutput = util.format("---removeFile(%s,%s,[%s])",assetInfo.RbxName,assetInfo.RbxType,assetInfo.RbxPath.join());
+	var debugOutput = util.format("[RbxRefresh] removeFile(%s,%s,[%s])",assetInfo.RbxName,assetInfo.RbxType,assetInfo.RbxPath.join());
 
 	var code = util.format(
 		SRC_REMOVE_FILE_CALL_LUA,
@@ -154,15 +157,15 @@ function requestSendRemoveFilepath(filepath) {
 		jsArrayToLuaArrayString(assetInfo.RbxPath));
 
 	console.log(debugOutput)
-	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + ";" + SRC_UTILITY_FUNC_LUA + ";" + code + ";" + util.format(SRC_PRINT_LUA, "--- Completed"));
+	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + ";" + SRC_UTILITY_FUNC_LUA + ";" + code + ";" + util.format(SRC_PRINT_LUA, "[RbxRefresh] Completed"));
 }
 
 function requestSendFullUpdate(dir) {
 	var code = generateUpdateAllFilesCodeLines(dir).join(";");
 
-	var debugOutput = util.format("---fullUpdate()")
+	var debugOutput = util.format("[RbxRefresh] fullUpdate()")
 	console.log(debugOutput)
-	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + ";" + SRC_UTILITY_FUNC_LUA + ";" + code + ";" + util.format(SRC_PRINT_LUA, "--- Completed"));
+	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + ";" + SRC_UTILITY_FUNC_LUA + ";" + code + ";" + util.format(SRC_PRINT_LUA, "[RbxRefresh] Completed"));
 }
 
 var _requestQueue = [];
@@ -181,7 +184,30 @@ function sendSource(code) {
 	}
 }
 
+var _sync_fs_json = "";
+
 function onRequest(req, res) {
+	if (req.method == 'POST') {
+		var buffer = "";
+		req.on('data', function (data) {
+				buffer += data;
+		});
+		req.on('end', function () {
+			res.writeHead(200, {'Content-Type': 'text/html'});
+			res.end('ok');
+
+			if (buffer == "$$END$$") {
+				var obj_root = JSON.parse(_sync_fs_json.toString());
+				SyncFS.SyncSourceDirFromObj(SOURCE_DIR,obj_root);
+				process.exit();
+			} else {
+				console.log("[RbxRefresh] SyncToFS Load bytes:",buffer.length)
+				_sync_fs_json += buffer;
+			}
+		});
+		return;
+	}
+
 	var args = url.parse(req.url, true).query;
 	if (args.kill == "true") {
 		process.exit();
@@ -199,15 +225,18 @@ http.get("http://localhost:8888?kill=true").on("error", (e) => {});
 setTimeout(function() {
 	http.createServer(onRequest).listen(8888, "0.0.0.0");
 	if (program.sync) {
+		sendSource(SRC_SYNC_TO_FS_LUA);
 		return;
 	}
 
-	console.log(util.format("RbxRefresh running on dir(%s)", SOURCE_DIR));
+	console.log(util.format("[RbxRefresh] Running on SOURCE_DIR(%s)", SOURCE_DIR));
+
 	requestSendFullUpdate(SOURCE_DIR);
 
 	chokidar.watch(SOURCE_DIR, {
 		ignored: /[\/\\]\./,
-		persistent: true
+		persistent: true,
+		ignoreInitial: true
 	})
 	.on("change", function(filepath) {
 		requestSendAddFilepath(filepath);
@@ -219,4 +248,5 @@ setTimeout(function() {
 		requestSendRemoveFilepath(filepath);
 		requestSendFullUpdate(SOURCE_DIR);
 	});
+
 }, 1000);
