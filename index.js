@@ -140,7 +140,7 @@ function requestSendAddFilepath(filepath) {
 	var code = generateUpdateFileCode(filepath);
 
 	var assetInfo = getAssetRbxInfoFromFilepath(filepath);
-	var debugOutput = util.format("---setSource(%s,%s,[%s])",assetInfo.RbxName,assetInfo.RbxType,assetInfo.RbxPath.join())
+	var debugOutput = util.format("[RbxRefresh] setSource(%s,%s,[%s])",assetInfo.RbxName,assetInfo.RbxType,assetInfo.RbxPath.join())
 
 	console.log(debugOutput)
 	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + ";" + SRC_UTILITY_FUNC_LUA + ";" + code + ";" + util.format(SRC_PRINT_LUA, "--- Completed"));
@@ -148,7 +148,7 @@ function requestSendAddFilepath(filepath) {
 
 function requestSendRemoveFilepath(filepath) {
 	var assetInfo = getAssetRbxInfoFromFilepath(filepath);
-	var debugOutput = util.format("---removeFile(%s,%s,[%s])",assetInfo.RbxName,assetInfo.RbxType,assetInfo.RbxPath.join());
+	var debugOutput = util.format("[RbxRefresh] removeFile(%s,%s,[%s])",assetInfo.RbxName,assetInfo.RbxType,assetInfo.RbxPath.join());
 
 	var code = util.format(
 		SRC_REMOVE_FILE_CALL_LUA,
@@ -163,7 +163,7 @@ function requestSendRemoveFilepath(filepath) {
 function requestSendFullUpdate(dir) {
 	var code = generateUpdateAllFilesCodeLines(dir).join(";");
 
-	var debugOutput = util.format("---fullUpdate()")
+	var debugOutput = util.format("[RbxRefresh] fullUpdate()")
 	console.log(debugOutput)
 	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + ";" + SRC_UTILITY_FUNC_LUA + ";" + code + ";" + util.format(SRC_PRINT_LUA, "--- Completed"));
 }
