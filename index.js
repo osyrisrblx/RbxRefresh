@@ -22,7 +22,7 @@ program
 	.parse(process.argv);
 
 function getTemplate(templatePath) {
-	return fs.readFileSync(path.resolve(__dirname, templatePath));
+	return fs.readFileSync(path.resolve(__dirname, templatePath)).toString();
 }
 
 var SRC_UTILITY_FUNC_LUA = getTemplate("templates/UtilityFuncLua.template.lua");
@@ -78,7 +78,7 @@ function matchAssetRbxType(str) {
 	if (isAliasOf(str, RBXTYPE_LOCALSCRIPT_ALIASES)) {
 		return RBXTYPE_LOCALSCRIPT;
 	} else if (isAliasOf(str, RBXTYPE_SCRIPT_ALIASES)) {
-		return RBXTYPE_SCRIPT_ALIASES;
+		return RBXTYPE_SCRIPT;
 	} else if (isAliasOf(str, RBXTYPE_MODULESCRIPT_ALIASES)) {
 		return RBXTYPE_MODULESCRIPT;
 	} else {
@@ -129,7 +129,8 @@ function generateUpdateFileCode(filepath) {
 		assetInfo.RbxName,
 		assetInfo.RbxType,
 		jsArrayToLuaArrayString(assetInfo.RbxPath),
-		fileContents);
+		fileContents
+	);
 }
 
 function requestSendAddFilepath(filepath) {
