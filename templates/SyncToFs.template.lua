@@ -80,4 +80,15 @@ sync_rtraversal(game, obj_game, {
 })
 
 local json_str = game:GetService("HttpService"):JSONEncode(obj_game)
-print(json_str)
+local json_str_len = #json_str
+local request_size = 1000000
+local i = 1
+while i < json_str_len do
+  local i_end = i + request_size
+  if i_end > json_str_len then
+    i_end = json_str_len
+  end
+  game:GetService("HttpService"):PostAsync("http://localhost:8888", string.sub(json_str,i,i_end))
+  i = i_end + 1
+end
+game:GetService("HttpService"):PostAsync("http://localhost:8888", "$$END$$")
