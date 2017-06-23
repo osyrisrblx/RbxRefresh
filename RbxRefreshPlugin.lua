@@ -11,11 +11,11 @@ plugin:CreateToolbar("RbxRefresh"):CreateButton("RbxRefresh", "", "").Click:conn
 	tag = myTag
 	enabled = not enabled
 	if enabled then
-		print("Running on localhost port " .. PORT)
+		print("[RbxRefresh] Running on localhost port " .. PORT)
 
 		while tag == myTag do
 			if not enabled then break end
-			print("Requesting...")
+			print("[RbxRefresh] Requesting...")
 			local source
 			local success, message = pcall(function()
 				source = HttpService:GetAsync(string.format("http://localhost:%s", PORT))
@@ -23,7 +23,7 @@ plugin:CreateToolbar("RbxRefresh"):CreateButton("RbxRefresh", "", "").Click:conn
 			if not success then
 				local lowerMessage = string.lower(message)
 				if (lowerMessage:find("error") and not lowerMessage:find("timeout")) then
-					print("RbxRefresh ending because:", message)
+					print("[RbxRefresh] Ending because:", message)
 					wait(1)
 				elseif (lowerMessage:find("enabled")) then
 					print(message)
@@ -34,7 +34,7 @@ plugin:CreateToolbar("RbxRefresh"):CreateButton("RbxRefresh", "", "").Click:conn
 					loadstring(source)()
 				end)
 				if not suc then
-					warn("ERR:" .. err)
+					warn("[RbxRefresh] ERR:" .. err)
 					warn(source)
 				end
 			end
@@ -42,6 +42,6 @@ plugin:CreateToolbar("RbxRefresh"):CreateButton("RbxRefresh", "", "").Click:conn
 			wait(0.1)
 		end
 	else
-		print("RbxRefresh stopped")
+		print("[RbxRefresh] Stopped")
 	end
 end)
