@@ -201,7 +201,7 @@ function onRequest(req, res) {
 				SyncFS.SyncSourceDirFromObj(SOURCE_DIR,obj_root);
 				process.exit();
 			} else {
-				console.log("SYNC_FS_BUFFER + ",buffer.length)
+				console.log("SyncToFS Load bytes:",buffer.length)
 				_sync_fs_json += buffer;
 			}
 		});
@@ -230,20 +230,26 @@ setTimeout(function() {
 	}
 
 	console.log(util.format("RbxRefresh running on dir(%s)", SOURCE_DIR));
+
 	requestSendFullUpdate(SOURCE_DIR);
 
 	chokidar.watch(SOURCE_DIR, {
 		ignored: /[\/\\]\./,
-		persistent: true
+		persistent: true,
+		ignoreInitial: true
 	})
 	.on("change", function(filepath) {
+		console.log("change",filepath)
 		requestSendAddFilepath(filepath);
 	})
 	.on("add",function(filepath) {
+		console.log("add",filepath)
 		requestSendAddFilepath(filepath);
 	})
 	.on("unlink",function(filepath) {
+		console.log("unlink",filepath)
 		requestSendRemoveFilepath(filepath);
 		requestSendFullUpdate(SOURCE_DIR);
 	});
+
 }, 1000);
