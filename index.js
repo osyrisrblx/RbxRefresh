@@ -143,7 +143,7 @@ function requestSendAddFilepath(filepath) {
 	var debugOutput = util.format("[RbxRefresh] setSource(%s,%s,[%s])",assetInfo.RbxName,assetInfo.RbxType,assetInfo.RbxPath.join())
 
 	console.log(debugOutput)
-	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + ";" + SRC_UTILITY_FUNC_LUA + ";" + code + ";" + util.format(SRC_PRINT_LUA, "[RbxRefresh] Completed"));
+	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + "\n" + SRC_UTILITY_FUNC_LUA + "\n" + code + "\n" + util.format(SRC_PRINT_LUA, "[RbxRefresh] Completed"));
 }
 
 function requestSendRemoveFilepath(filepath) {
@@ -157,15 +157,15 @@ function requestSendRemoveFilepath(filepath) {
 		jsArrayToLuaArrayString(assetInfo.RbxPath));
 
 	console.log(debugOutput)
-	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + ";" + SRC_UTILITY_FUNC_LUA + ";" + code + ";" + util.format(SRC_PRINT_LUA, "[RbxRefresh] Completed"));
+	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + "\n" + SRC_UTILITY_FUNC_LUA + "\n" + code + "\n" + util.format(SRC_PRINT_LUA, "[RbxRefresh] Completed"));
 }
 
 function requestSendFullUpdate(dir) {
-	var code = generateUpdateAllFilesCodeLines(dir).join(";");
+	var code = generateUpdateAllFilesCodeLines(dir).join("\n");
 
 	var debugOutput = util.format("[RbxRefresh] fullUpdate()")
 	console.log(debugOutput)
-	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + ";" + SRC_UTILITY_FUNC_LUA + ";" + code + ";" + util.format(SRC_PRINT_LUA, "[RbxRefresh] Completed"));
+	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + "\n" + SRC_UTILITY_FUNC_LUA + "\n" + code + "\n" + util.format(SRC_PRINT_LUA, "[RbxRefresh] Completed"));
 }
 
 var _requestQueue = [];
