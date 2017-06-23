@@ -1,5 +1,5 @@
 # RbxRefresh
-Mirrors a local file structure to ROBLOX Studio. 
+Mirrors a local file structure to ROBLOX Studio.
 
 ## Usage
 1. `npm install rbxrefresh -g`
