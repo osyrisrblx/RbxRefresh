@@ -190,7 +190,7 @@ function onRequest(req, res) {
 	if (req.method == 'POST') {
 		var buffer = "";
 		req.on('data', function (data) {
-				buffer += data;
+			buffer += data;
 		});
 		req.on('end', function () {
 			res.writeHead(200, {'Content-Type': 'text/html'});
