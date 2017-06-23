@@ -30,9 +30,11 @@ An easy way to use Sublime Text 3 with RbxRefresh is by creating a build system.
 You can do this using the following steps:
 1. Tools > Build System > New Build System...
 2. Paste the following into the new file
-```{
+```
+{
 	"shell_cmd": "rbxrefresh $folder/src"
-}```
+}
+```
 3. Save it as `RbxRefresh.sublime-build`
 4. Tools > Build System > RbxRefresh
 
