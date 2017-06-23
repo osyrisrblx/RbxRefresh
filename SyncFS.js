@@ -12,16 +12,20 @@ function path_get_stat(path) {
 
 function mkdir(path) {
   console.log("[DIR_]:",path);
-  /*
-  if (path_get_stat(itr_child_path) == null) {
-    fs.mkdirSync(itr_child_path);
+
+  if (path_get_stat(path) == null) {
+    fs.mkdirSync(path);
   }
-  */
 }
 
 function mkscript(path,type,contents) {
   var filename = path + "." + type + Util.FSEXT_LUA;
   console.log("[FILE]:",filename);
+
+  if (path_get_stat(path) != null) {
+    fs.unlinkSync(path);
+  }
+  fs.writeFileSync(path,contents)
 }
 
 function obj_rTraversal(obj_path,obj) {
