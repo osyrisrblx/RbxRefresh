@@ -143,7 +143,7 @@ function requestSendAddFilepath(filepath) {
 	var debugOutput = util.format("[RbxRefresh] setSource(%s,%s,[%s])",assetInfo.RbxName,assetInfo.RbxType,assetInfo.RbxPath.join())
 
 	console.log(debugOutput)
-	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + ";" + SRC_UTILITY_FUNC_LUA + ";" + code + ";" + util.format(SRC_PRINT_LUA, "--- Completed"));
+	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + ";" + SRC_UTILITY_FUNC_LUA + ";" + code + ";" + util.format(SRC_PRINT_LUA, "[RbxRefresh] Completed"));
 }
 
 function requestSendRemoveFilepath(filepath) {
@@ -157,7 +157,7 @@ function requestSendRemoveFilepath(filepath) {
 		jsArrayToLuaArrayString(assetInfo.RbxPath));
 
 	console.log(debugOutput)
-	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + ";" + SRC_UTILITY_FUNC_LUA + ";" + code + ";" + util.format(SRC_PRINT_LUA, "--- Completed"));
+	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + ";" + SRC_UTILITY_FUNC_LUA + ";" + code + ";" + util.format(SRC_PRINT_LUA, "[RbxRefresh] Completed"));
 }
 
 function requestSendFullUpdate(dir) {
@@ -165,7 +165,7 @@ function requestSendFullUpdate(dir) {
 
 	var debugOutput = util.format("[RbxRefresh] fullUpdate()")
 	console.log(debugOutput)
-	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + ";" + SRC_UTILITY_FUNC_LUA + ";" + code + ";" + util.format(SRC_PRINT_LUA, "--- Completed"));
+	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + ";" + SRC_UTILITY_FUNC_LUA + ";" + code + ";" + util.format(SRC_PRINT_LUA, "[RbxRefresh] Completed"));
 }
 
 var _requestQueue = [];
@@ -201,7 +201,7 @@ function onRequest(req, res) {
 				SyncFS.SyncSourceDirFromObj(SOURCE_DIR,obj_root);
 				process.exit();
 			} else {
-				console.log("SyncToFS Load bytes:",buffer.length)
+				console.log("[RbxRefresh] SyncToFS Load bytes:",buffer.length)
 				_sync_fs_json += buffer;
 			}
 		});
@@ -229,7 +229,7 @@ setTimeout(function() {
 		return;
 	}
 
-	console.log(util.format("RbxRefresh running on dir(%s)", SOURCE_DIR));
+	console.log(util.format("[RbxRefresh] Running on SOURCE_DIR(%s)", SOURCE_DIR));
 
 	requestSendFullUpdate(SOURCE_DIR);
 
