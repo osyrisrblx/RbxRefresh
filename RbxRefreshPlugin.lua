@@ -4,6 +4,7 @@ local HttpService = game:GetService("HttpService")
 local PORT = 8888
 
 local enabled = false
+local lastSuccess = true
 local tag
 
 plugin:CreateToolbar("RbxRefresh"):CreateButton("RbxRefresh", "", "").Click:connect(function()
@@ -21,16 +22,18 @@ plugin:CreateToolbar("RbxRefresh"):CreateButton("RbxRefresh", "", "").Click:conn
 				source = HttpService:GetAsync(string.format("http://localhost:%s", PORT))
 			end)
 			if not success then
-				local lowerMessage = string.lower(message)
-				if (lowerMessage:find("error") and not lowerMessage:find("timeout")) then
-					print("[RbxRefresh] Ending because:", message)
-					wait(1)
-				elseif (lowerMessage:find("enabled")) then
-					print(message)
-					wait(1)
+				local lowerMessage = message:lower()
+				if lastSuccess then
+					if (lowerMessage:find("error") and not lowerMessage:find("timeout")) then
+						print("[RbxRefresh] Ending because:", message)
+						wait(1)
+					elseif (lowerMessage:find("enabled")) then
+						print(message)
+						wait(1)
+					end
 				end
 			else
-				local suc,err = pcall(function()
+				local suc, err = pcall(function()
 					loadstring(source)()
 				end)
 				if not suc then
@@ -38,6 +41,7 @@ plugin:CreateToolbar("RbxRefresh"):CreateButton("RbxRefresh", "", "").Click:conn
 					warn(source)
 				end
 			end
+			lastSuccess = success
 
 			wait(0.1)
 		end
