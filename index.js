@@ -8,8 +8,8 @@ var path = require("path");
 var util = require("util");
 var zlib = require('zlib');
 
-var SyncFS = require("./src/SyncFS");
-var Util = require("./src/Util");
+var SyncFS = require("./SyncFS");
+var Util = require("./Util");
 
 var SOURCE_DIR;
 

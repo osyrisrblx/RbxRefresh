@@ -1,6 +1,6 @@
 var fs = require("fs");
 var path = require("path");
-var Util = require("./src/Util");
+var Util = require("./Util");
 
 function path_get_stat(path) {
   try {
