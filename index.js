@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env node 
 
 var chokidar = require("chokidar");
 var fs = require("fs");
@@ -17,12 +17,12 @@ var pkgjson = require("./package.json");
 var program = require("commander");
 program
 	.version(pkgjson.version)
-	.usage("rbxrefresh [options] <dir>")
-	.arguments("<dir>")
+	.usage("rbxrefresh [options] [dir]")
+	.arguments("[dir]")
 	.option("-s, --sync", "Enables sync to filesystem")
 	.option("-f, --fullupdateonly", "Terminates server after full update")
 	.action(function(env) {
-		SOURCE_DIR = env;
+		SOURCE_DIR = env || ".";
 	})
 	.parse(process.argv);
 
@@ -178,7 +178,7 @@ function writeCodeToRequest(code,request) {
 	request.end(code, function() {
 		if (program.fullupdateonly) {
 			if (_sendQueue.length == 0) {
-				process.exit()
+				process.exit();
 			}
 		}
 	});
