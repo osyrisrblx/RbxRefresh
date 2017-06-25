@@ -1,15 +1,15 @@
 {
   "name": "rbxrefresh",
-  "version": "1.0.23",
+  "version": "1.0.24",
   "description": "Syncs a local file structure to ROBLOX Studio.",
-  "main": "./src/index.js",
+  "main": "./index.js",
   "dependencies": {
     "chokidar": "^1.7.0",
     "commander": "^2.9.0"
   },
   "devDependencies": {},
   "bin": {
-    "rbxrefresh": "./src/index.js"
+    "rbxrefresh": "./index.js"
   },
   "repository": {
     "type": "git",
