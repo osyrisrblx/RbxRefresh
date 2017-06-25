@@ -1,4 +1,4 @@
-#!/usr/bin/env node 
+#!/usr/bin/env node
 
 var chokidar = require("chokidar");
 var fs = require("fs");
@@ -20,6 +20,7 @@ program
 	.usage("rbxrefresh [options] <dir>")
 	.arguments("<dir>")
 	.option("-s, --sync", "Enables sync to filesystem")
+	.option("-f, --fullupdateonly", "Terminates server after full update")
 	.action(function(env) {
 		SOURCE_DIR = env;
 	})
@@ -174,7 +175,13 @@ var _sendQueue = [];
 
 function writeCodeToRequest(code,request) {
 	request.writeHead(200, {"Content-Type": "text/plain"});
-	request.end(code);
+	request.end(code, function() {
+		if (program.fullupdateonly) {
+			if (_sendQueue.length == 0) {
+				process.exit()
+			}
+		}
+	});
 }
 
 function sendSource(code) {
@@ -233,6 +240,10 @@ setTimeout(function() {
 	console.log(util.format("[RbxRefresh] Running on SOURCE_DIR(%s)", SOURCE_DIR));
 
 	requestSendFullUpdate(SOURCE_DIR);
+
+	if (program.fullupdateonly) {
+		return;
+	}
 
 	chokidar.watch(SOURCE_DIR, {
 		ignored: /[\/\\]\./,
