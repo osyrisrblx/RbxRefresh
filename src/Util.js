@@ -8,6 +8,6 @@ module.exports = {
   IsScript: function(type) {
     return type == this.RBXTYPE_MODULESCRIPT ||
       type == this.RBXTYPE_LOCALSCRIPT ||
-      type == this.RBXTYPE_SCRIPT
+      type == this.RBXTYPE_SCRIPT;
   }
 };
