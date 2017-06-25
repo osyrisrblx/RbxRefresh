@@ -1,6 +1,6 @@
 {
   "name": "rbxrefresh",
-  "version": "1.0.19",
+  "version": "1.0.20",
   "description": "Syncs a local file structure to ROBLOX Studio.",
   "main": "./src/index.js",
   "dependencies": {
