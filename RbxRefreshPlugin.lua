@@ -1,4 +1,3 @@
-local LogService = game:GetService("LogService")
 local HttpService = game:GetService("HttpService")
 
 local PORT = 8888
