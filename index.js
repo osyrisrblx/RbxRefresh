@@ -11,7 +11,7 @@ var zlib = require('zlib');
 var SyncFS = require("./SyncFS");
 var Util = require("./Util");
 
-var SOURCE_DIR;
+var SOURCE_DIR = ".";
 
 var pkgjson = require("./package.json");
 var program = require("commander");
@@ -22,7 +22,9 @@ program
 	.option("-s, --sync", "Enables sync to filesystem")
 	.option("-f, --fullupdateonly", "Terminates server after full update")
 	.action(function(env) {
-		SOURCE_DIR = env || ".";
+		if (env) {
+			SOURCE_DIR = env;
+		}	
 	})
 	.parse(process.argv);
 
