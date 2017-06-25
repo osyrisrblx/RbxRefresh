@@ -7,8 +7,8 @@ var url = require("url");
 var path = require("path");
 var util = require("util");
 var zlib = require('zlib');
-var SyncFS = require("./SyncFS")
-var Util = require("./Util")
+var SyncFS = require("./SyncFS");
+var Util = require("./Util");
 
 var SOURCE_DIR;
 
@@ -40,9 +40,9 @@ var RBXTYPE_MODULESCRIPT_ALIASES = ["ModuleScript", "module"];
 var RBXTYPE_LOCALSCRIPT_ALIASES = ["LocalScript", "local", "client"];
 var RBXTYPE_SCRIPT_ALIASES = ["Script", "server", ""];
 
-var RBXTYPE_MODULESCRIPT = Util.RBXTYPE_MODULESCRIPT
-var RBXTYPE_LOCALSCRIPT = Util.RBXTYPE_LOCALSCRIPT
-var RBXTYPE_SCRIPT = Util.RBXTYPE_SCRIPT
+var RBXTYPE_MODULESCRIPT = Util.RBXTYPE_MODULESCRIPT;
+var RBXTYPE_LOCALSCRIPT = Util.RBXTYPE_LOCALSCRIPT;
+var RBXTYPE_SCRIPT = Util.RBXTYPE_SCRIPT;
 
 function isAliasOf(str, aliases) {
 	for (var i = 0; i < aliases.length; i++) {
@@ -74,7 +74,7 @@ function generateUpdateAllFilesCodeLines(dir) {
 }
 
 function jsArrayToLuaArrayString(jsarray) {
-	return "{" + jsarray.map(function(x) { return "\"" + x + "\"" }).join() + "}";
+	return "{" + jsarray.map(function(x) { return "\"" + x + "\""; }).join() + "}";
 }
 
 function matchAssetRbxType(str) {
@@ -117,7 +117,7 @@ function getAssetRbxInfoFromFilepath(filepath) {
 		RbxName: assetRbxName,
 		RbxType: assetRbxType,
 		RbxPath: relativeFilepathArray
-	}
+	};
 }
 
 function generateUpdateFileCode(filepath) {
@@ -140,9 +140,9 @@ function requestSendAddFilepath(filepath) {
 	var code = generateUpdateFileCode(filepath);
 
 	var assetInfo = getAssetRbxInfoFromFilepath(filepath);
-	var debugOutput = util.format("[RbxRefresh] setSource(%s,%s,[%s])",assetInfo.RbxName,assetInfo.RbxType,assetInfo.RbxPath.join())
+	var debugOutput = util.format("[RbxRefresh] setSource(%s,%s,[%s])",assetInfo.RbxName,assetInfo.RbxType,assetInfo.RbxPath.join());
 
-	console.log(debugOutput)
+	console.log(debugOutput);
 	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + "\n" + SRC_UTILITY_FUNC_LUA + "\n" + code + "\n" + util.format(SRC_PRINT_LUA, "[RbxRefresh] Completed"));
 }
 
@@ -156,15 +156,15 @@ function requestSendRemoveFilepath(filepath) {
 		assetInfo.RbxType,
 		jsArrayToLuaArrayString(assetInfo.RbxPath));
 
-	console.log(debugOutput)
+	console.log(debugOutput);
 	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + "\n" + SRC_UTILITY_FUNC_LUA + "\n" + code + "\n" + util.format(SRC_PRINT_LUA, "[RbxRefresh] Completed"));
 }
 
 function requestSendFullUpdate(dir) {
 	var code = generateUpdateAllFilesCodeLines(dir).join("\n");
 
-	var debugOutput = util.format("[RbxRefresh] fullUpdate()")
-	console.log(debugOutput)
+	var debugOutput = util.format("[RbxRefresh] fullUpdate()");
+	console.log(debugOutput);
 	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + "\n" + SRC_UTILITY_FUNC_LUA + "\n" + code + "\n" + util.format(SRC_PRINT_LUA, "[RbxRefresh] Completed"));
 }
 
@@ -201,7 +201,7 @@ function onRequest(req, res) {
 				SyncFS.SyncSourceDirFromObj(SOURCE_DIR,obj_root);
 				process.exit();
 			} else {
-				console.log("[RbxRefresh] SyncToFS Load bytes:",buffer.length)
+				console.log("[RbxRefresh] SyncToFS Load bytes:",buffer.length);
 				_sync_fs_json += buffer;
 			}
 		});
@@ -214,13 +214,13 @@ function onRequest(req, res) {
 		return;
 	}
 	if (_sendQueue.length > 0) {
-		writeCodeToRequest(_sendQueue.shift(),res)
+		writeCodeToRequest(_sendQueue.shift(),res);
 	} else {
 		_requestQueue.push(res);
 	}
 }
 
-http.get("http://localhost:8888?kill=true").on("error", (e) => {});
+http.get("http://localhost:8888?kill=true").on("error", function(e){});
 
 setTimeout(function() {
 	http.createServer(onRequest).listen(8888, "0.0.0.0");
