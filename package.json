@@ -1,27 +1,27 @@
 {
-  "name": "rbxrefresh",
-  "version": "1.0.25",
-  "description": "Syncs a local file structure to ROBLOX Studio.",
-  "main": "./index.js",
-  "dependencies": {
-    "chokidar": "^1.7.0",
-    "commander": "^2.9.0"
-  },
-  "devDependencies": {},
-  "bin": {
-    "rbxrefresh": "./index.js"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/osyrisrblx/RbxRefresh.git"
-  },
-  "keywords": [
-    "ROBLOX"
-  ],
-  "author": "Osyris",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/osyrisrblx/RbxRefresh/issues"
-  },
-  "homepage": "https://github.com/osyrisrblx/RbxRefresh#readme"
+	"name": "rbxrefresh",
+	"version": "1.0.27",
+	"description": "Syncs a local file structure to ROBLOX Studio.",
+	"main": "./index.js",
+	"dependencies": {
+		"chokidar": "^1.7.0",
+		"commander": "^2.9.0"
+	},
+	"devDependencies": {},
+	"bin": {
+		"rbxrefresh": "./index.js"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/osyrisrblx/RbxRefresh.git"
+	},
+	"keywords": [
+		"ROBLOX"
+	],
+	"author": "Osyris",
+	"license": "ISC",
+	"bugs": {
+		"url": "https://github.com/osyrisrblx/RbxRefresh/issues"
+	},
+	"homepage": "https://github.com/osyrisrblx/RbxRefresh#readme"
 }
