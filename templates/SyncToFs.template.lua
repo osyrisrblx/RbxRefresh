@@ -70,6 +70,7 @@ end
 
 local obj_game = cons_obj("game","DataModel",false)
 sync_rtraversal(game, obj_game, {
+  game:FindFirstChild("Workspace"),
   game:FindFirstChild("ReplicatedFirst"),
   game:FindFirstChild("ReplicatedStorage"),
   game:FindFirstChild("ServerScriptService"),
