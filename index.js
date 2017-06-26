@@ -6,7 +6,6 @@ var http = require("http");
 var url = require("url");
 var path = require("path");
 var util = require("util");
-var zlib = require('zlib');
 
 var SyncFS = require("./SyncFS");
 var Util = require("./Util");
@@ -24,9 +23,13 @@ program
 	.action(function(env) {
 		if (env) {
 			SOURCE_DIR = env;
-		}	
+		}
 	})
 	.parse(process.argv);
+
+if (!fs.existsSync(SOURCE_DIR)) {
+	error("Could not find directory!");
+}
 
 function getTemplate(templatePath) {
 	return fs.readFileSync(path.resolve(__dirname, templatePath)).toString();
@@ -197,14 +200,14 @@ function sendSource(code) {
 var _sync_fs_json = "";
 
 function onRequest(req, res) {
-	if (req.method == 'POST') {
+	if (req.method == "POST") {
 		var buffer = "";
-		req.on('data', function (data) {
+		req.on("data", function (data) {
 			buffer += data;
 		});
-		req.on('end', function () {
-			res.writeHead(200, {'Content-Type': 'text/html'});
-			res.end('ok');
+		req.on("end", function () {
+			res.writeHead(200, {"Content-Type": "text/html"});
+			res.end("ok");
 
 			if (buffer == "$$END$$") {
 				var obj_root = JSON.parse(_sync_fs_json.toString());
