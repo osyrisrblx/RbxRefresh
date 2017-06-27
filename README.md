@@ -32,7 +32,7 @@ You can do this using the following steps:
 2. Paste the following into the new file
 ```
 {
-	"shell_cmd": "rbxrefresh $folder/src"
+	"shell_cmd": "rbxrefresh $folder"
 }
 ```
 3. Save it as `RbxRefresh.sublime-build`
