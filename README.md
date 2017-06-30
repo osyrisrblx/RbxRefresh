@@ -33,7 +33,8 @@ You can do this using the following steps:
 2. Paste the following into the new file
 ```
 {
-	"cmd": ["rbxrefresh", "$folder"]
+	"cmd": ["rbxrefresh", "$folder"],
+	"shell": true
 }
 ```
 3. Save it as `RbxRefresh.sublime-build`
