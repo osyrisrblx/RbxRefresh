@@ -28,7 +28,7 @@ program
 	.parse(process.argv);
 
 if (!fs.existsSync(SOURCE_DIR)) {
-	error("Could not find directory!");
+	throw new Error("Could not find directory!");
 }
 
 function getTemplate(templatePath) {
@@ -147,7 +147,7 @@ function requestSendAddFilepath(filepath) {
 	var code = generateUpdateFileCode(filepath);
 
 	var assetInfo = getAssetRbxInfoFromFilepath(filepath);
-	var debugOutput = util.format("[RbxRefresh] setSource(%s,%s,[%s])",assetInfo.RbxName,assetInfo.RbxType,assetInfo.RbxPath.join());
+	var debugOutput = util.format("[RbxRefresh] setSource(%s,%s,[%s])", assetInfo.RbxName, assetInfo.RbxType, assetInfo.RbxPath.join());
 
 	console.log(debugOutput);
 	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + "\n" + SRC_UTILITY_FUNC_LUA + "\n" + code + "\n" + util.format(SRC_PRINT_LUA, "[RbxRefresh] Completed"));
@@ -155,7 +155,7 @@ function requestSendAddFilepath(filepath) {
 
 function requestSendRemoveFilepath(filepath) {
 	var assetInfo = getAssetRbxInfoFromFilepath(filepath);
-	var debugOutput = util.format("[RbxRefresh] removeFile(%s,%s,[%s])",assetInfo.RbxName,assetInfo.RbxType,assetInfo.RbxPath.join());
+	var debugOutput = util.format("[RbxRefresh] removeFile(%s,%s,[%s])", assetInfo.RbxName, assetInfo.RbxType, assetInfo.RbxPath.join());
 
 	var code = util.format(
 		SRC_REMOVE_FILE_CALL_LUA,
@@ -178,7 +178,7 @@ function requestSendFullUpdate(dir) {
 var _requestQueue = [];
 var _sendQueue = [];
 
-function writeCodeToRequest(code,request) {
+function writeCodeToRequest(code, request) {
 	request.writeHead(200, {"Content-Type": "text/plain"});
 	request.end(code, function() {
 		if (program.fullupdateonly) {
@@ -191,7 +191,7 @@ function writeCodeToRequest(code,request) {
 
 function sendSource(code) {
 	if (_requestQueue.length > 0) {
-		writeCodeToRequest(code,_requestQueue.shift());
+		writeCodeToRequest(code, _requestQueue.shift());
 	} else {
 		_sendQueue.push(code);
 	}
@@ -211,25 +211,24 @@ function onRequest(req, res) {
 
 			if (buffer == "$$END$$") {
 				var obj_root = JSON.parse(_sync_fs_json.toString());
-				SyncFS.SyncSourceDirFromObj(SOURCE_DIR,obj_root);
+				SyncFS.SyncSourceDirFromObj(SOURCE_DIR, obj_root);
 				process.exit();
 			} else {
-				console.log("[RbxRefresh] SyncToFS Load bytes:",buffer.length);
+				console.log("[RbxRefresh] SyncToFS Load bytes:", buffer.length);
 				_sync_fs_json += buffer;
 			}
 		});
-		return;
-	}
-
-	var args = url.parse(req.url, true).query;
-	if (args.kill == "true") {
-		process.exit();
-		return;
-	}
-	if (_sendQueue.length > 0) {
-		writeCodeToRequest(_sendQueue.shift(),res);
 	} else {
-		_requestQueue.push(res);
+		var args = url.parse(req.url, true).query;
+		if (args.kill == "true") {
+			process.exit();
+			return;
+		}
+		if (_sendQueue.length > 0) {
+			writeCodeToRequest(_sendQueue.shift(), res);
+		} else {
+			_requestQueue.push(res);
+		}
 	}
 }
 
@@ -239,7 +238,6 @@ setTimeout(function() {
 	http.createServer(onRequest).listen(8888, "0.0.0.0");
 	if (program.sync) {
 		sendSource(SRC_SYNC_TO_FS_LUA);
-		return;
 	}
 
 	console.log(util.format("[RbxRefresh] Running on SOURCE_DIR(%s)", SOURCE_DIR));
@@ -258,10 +256,10 @@ setTimeout(function() {
 	.on("change", function(filepath) {
 		requestSendAddFilepath(filepath);
 	})
-	.on("add",function(filepath) {
+	.on("add", function(filepath) {
 		requestSendAddFilepath(filepath);
 	})
-	.on("unlink",function(filepath) {
+	.on("unlink", function(filepath) {
 		requestSendRemoveFilepath(filepath);
 		requestSendFullUpdate(SOURCE_DIR);
 	});
