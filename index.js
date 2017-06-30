@@ -212,7 +212,6 @@ function onRequest(req, res) {
 			if (buffer == "$$END$$") {
 				var obj_root = JSON.parse(_sync_fs_json.toString());
 				SyncFS.SyncSourceDirFromObj(SOURCE_DIR, obj_root);
-				process.exit();
 			} else {
 				console.log("[RbxRefresh] SyncToFS Load bytes:", buffer.length);
 				_sync_fs_json += buffer;
