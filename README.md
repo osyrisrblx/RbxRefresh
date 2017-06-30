@@ -8,7 +8,7 @@ RbxRefresh syncs your changes back into studio every time you save your files lo
 ## Usage
 1. `npm install rbxrefresh -g`
 2. `rbxrefresh SOURCE_DIRECTORY`
-3. Enable game.HttpService.HttpEnabled
+3. Enable `game.HttpService.HttpEnabled`
 4. [Install and enable RbxRefresh Studio Plugin](https://www.roblox.com/library/852039069/RbxRefresh)
 5. Make changes and save.
 
