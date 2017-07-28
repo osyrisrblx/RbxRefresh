@@ -191,7 +191,9 @@ function writeCodeToRequest(code, request) {
 
 function sendSource(code) {
 	if (_requestQueue.length > 0) {
-		writeCodeToRequest(code, _requestQueue.shift());
+		while (_requestQueue.length > 0) {
+			writeCodeToRequest(code, _requestQueue.shift());
+		}
 	} else {
 		_sendQueue.push(code);
 	}
@@ -224,7 +226,9 @@ function onRequest(req, res) {
 			return;
 		}
 		if (_sendQueue.length > 0) {
-			writeCodeToRequest(_sendQueue.shift(), res);
+			while (_sendQueue.length > 0) {
+				writeCodeToRequest(_sendQueue.shift(), res);
+			}
 		} else {
 			_requestQueue.push(res);
 		}
