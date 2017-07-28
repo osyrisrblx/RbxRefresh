@@ -252,7 +252,7 @@ setTimeout(function() {
 	}
 
 	chokidar.watch(SOURCE_DIR, {
-		ignored: /[\/\\]\./,
+		ignored: /(^|[\/\\])\.(?!$)/,
 		persistent: true,
 		ignoreInitial: true
 	})
