@@ -10,6 +10,7 @@ var util = require("util");
 var SyncFS = require("./SyncFS");
 var Util = require("./Util");
 
+var PROJECT_DIR = ".";
 var SOURCE_DIR = ".";
 
 var pkgjson = require("./package.json");
@@ -22,18 +23,32 @@ program
 	.option("-f, --fullupdateonly", "Terminates server after full update")
 	.action(function(env) {
 		if (env) {
-			SOURCE_DIR = env;
+			PROJECT_DIR = env;
 		}
 	})
 	.parse(process.argv);
 
-if (!fs.existsSync(SOURCE_DIR)) {
-	throw new Error("Could not find directory!");
+if (!fs.existsSync(PROJECT_DIR)) {
+	throw new Error("Could not find project directory!");
 }
+
+var SOURCE_DIR = PROJECT_DIR + "/src";
+if (!fs.existsSync(SOURCE_DIR)) {
+	// let's try old behavior?
+	SOURCE_DIR = PROJECT_DIR;
+	PROJECT_DIR = SOURCE_DIR + "/../";
+	if (!fs.existsSync(PROJECT_DIR)) {
+		throw new Error("Could not find project directory!");
+	}
+	if (!fs.existsSync(SOURCE_DIR)) {
+		throw new Error("Could not find src directory!");
+	}
+}
+
 
 var config = {};
 try {
-	config = JSON.parse(fs.readFileSync(SOURCE_DIR + "/../.rbxrefreshrc", "utf8"));
+	config = JSON.parse(fs.readFileSync(PROJECT_DIR + "/.rbxrefreshrc", "utf8"));
 } catch(e) {}
 
 var placeIdJsArray = [];
@@ -264,7 +279,7 @@ setTimeout(function() {
 	if (program.sync) {
 		sendSource(SRC_SYNC_TO_FS_LUA);
 	}
-	console.log(util.format("[RbxRefresh] Running on SOURCE_DIR(%s)", SOURCE_DIR));
+	console.log(util.format("[RbxRefresh] Running on PROJECT_DIR(%s)", PROJECT_DIR));
 	requestSendFullUpdate(SOURCE_DIR);
 	if (program.fullupdateonly) return;
 	chokidar.watch(SOURCE_DIR, {
