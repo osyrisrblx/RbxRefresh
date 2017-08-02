@@ -1,0 +1,1 @@
+if game.PlaceId ~= %d then return end
