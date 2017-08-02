@@ -31,6 +31,11 @@ if (!fs.existsSync(SOURCE_DIR)) {
 	throw new Error("Could not find directory!");
 }
 
+var config = {};
+try {
+	config = JSON.parse(fs.readFileSync(SOURCE_DIR + "/../.rbxrefreshrc", "utf8"));
+} catch(e) {}
+
 function getTemplate(templatePath) {
 	return fs.readFileSync(path.resolve(__dirname, templatePath)).toString();
 }
@@ -40,6 +45,7 @@ var SRC_SET_SOURCE_CALL_LUA = getTemplate("templates/SetSourceCall.template.lua"
 var SRC_REMOVE_FILE_CALL_LUA = getTemplate("templates/RemoveFileCall.template.lua");
 var SRC_PRINT_LUA = getTemplate("templates/Print.template.lua");
 var SRC_SYNC_TO_FS_LUA = getTemplate("templates/SyncToFs.template.lua");
+var SRC_GUARD_LUA = getTemplate("templates/Guard.template.lua");
 
 var FSEXT_LUA = Util.FSEXT_LUA;
 
@@ -92,7 +98,7 @@ function matchAssetRbxType(str) {
 	} else if (isAliasOf(str, RBXTYPE_MODULESCRIPT_ALIASES)) {
 		return RBXTYPE_MODULESCRIPT;
 	} else {
-		console.warn("Unknown file subext:" + str);
+		console.warn("Unknown file subext: " + str);
 		return RBXTYPE_MODULESCRIPT;
 	}
 }
@@ -190,6 +196,9 @@ function writeCodeToRequest(code, request) {
 }
 
 function sendSource(code) {
+	if (config.placeId != null) {
+		code = util.format(SRC_GUARD_LUA, config.placeId) + "\n" + code;
+	}
 	if (_requestQueue.length > 0) {
 		while (_requestQueue.length > 0) {
 			writeCodeToRequest(code, _requestQueue.shift());
@@ -237,7 +246,7 @@ function onRequest(req, res) {
 
 http.get("http://localhost:8888?kill=true").on("error", function(e){});
 
-setTimeout(function() {
+setTimeout(function() {	
 	http.createServer(onRequest).listen(8888, "0.0.0.0");
 	if (program.sync) {
 		sendSource(SRC_SYNC_TO_FS_LUA);
