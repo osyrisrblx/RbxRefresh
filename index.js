@@ -185,14 +185,14 @@ function generateUpdateFileCode(filepath) {
 function requestSendAddFilepath(filepath) {
 	var code = generateUpdateFileCode(filepath);
 	var assetInfo = getAssetRbxInfoFromFilepath(filepath);
-	var debugOutput = util.format("[RbxRefresh] setSource(%s,%s,[%s])", assetInfo.RbxName, assetInfo.RbxType, assetInfo.RbxPath.join());
+	var debugOutput = util.format("[RbxRefresh] setSource(%s, %s, [%s])", assetInfo.RbxName, assetInfo.RbxType, assetInfo.RbxPath.join());
 	console.log(debugOutput);
 	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + "\n" + SRC_UTILITY_FUNC_LUA + "\n" + code + "\n" + util.format(SRC_PRINT_LUA, "[RbxRefresh] Completed"));
 }
 
 function requestSendRemoveFilepath(filepath) {
 	var assetInfo = getAssetRbxInfoFromFilepath(filepath);
-	var debugOutput = util.format("[RbxRefresh] removeFile(%s,%s,[%s])", assetInfo.RbxName, assetInfo.RbxType, assetInfo.RbxPath.join());
+	var debugOutput = util.format("[RbxRefresh] removeFile(%s, %s, [%s])", assetInfo.RbxName, assetInfo.RbxType, assetInfo.RbxPath.join());
 	var code = util.format(
 		SRC_REMOVE_FILE_CALL_LUA,
 		assetInfo.RbxName,
