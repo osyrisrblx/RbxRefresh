@@ -1,4 +1,4 @@
-function str_split(str, delim)
+function strSplit(str, delim)
   local rtv = {}
   local last = 0
   for i=1,#str do
@@ -13,11 +13,11 @@ function str_split(str, delim)
 end
 
 function rbxPathElementHasTypeInfo(rbxPathElement)
-  local split = str_split(rbxPathElement,".")
+  local split = strSplit(rbxPathElement,".")
   if #split >= 2 then
     return true, split[1], split[2]
   else
-    return false,rbxPathElement,"Folder"
+    return false, rbxPathElement, "Folder"
   end
 end
 
