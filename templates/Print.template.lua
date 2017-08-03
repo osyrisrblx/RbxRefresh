@@ -1,1 +1,1 @@
-print([===[%s]===])
+print("[RbxRefresh] " .. [===[%s]===])
