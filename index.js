@@ -1,6 +1,7 @@
 #!/usr/bin/env node 
 
 var chokidar = require("chokidar");
+var colors = require("colors");
 var fs = require("fs");
 var http = require("http");
 var url = require("url");
@@ -83,6 +84,10 @@ var RBXTYPE_MODULESCRIPT = Util.RBXTYPE_MODULESCRIPT;
 var RBXTYPE_LOCALSCRIPT = Util.RBXTYPE_LOCALSCRIPT;
 var RBXTYPE_SCRIPT = Util.RBXTYPE_SCRIPT;
 
+function log() {
+	console.log("[RbxRefresh]".bold.red, ...arguments);
+}
+
 function isAliasOf(str, aliases) {
 	for (var i = 0; i < aliases.length; i++) {
 		if (aliases[i].toLowerCase() == str.toLowerCase()) {
@@ -120,7 +125,7 @@ function jsArrayToLuaArrayString(jsarray) {
 		} else if (xType == "string") {
 			return "\"" + x + "\"";
 		}
-	}).join() + "}";
+	}).join(", ") + "}";
 }
 
 function matchAssetRbxType(str) {
@@ -185,28 +190,28 @@ function generateUpdateFileCode(filepath) {
 function requestSendAddFilepath(filepath) {
 	var code = generateUpdateFileCode(filepath);
 	var assetInfo = getAssetRbxInfoFromFilepath(filepath);
-	var debugOutput = util.format("[RbxRefresh] setSource(%s, %s, [%s])", assetInfo.RbxName, assetInfo.RbxType, assetInfo.RbxPath.join());
-	console.log(debugOutput);
-	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + "\n" + SRC_UTILITY_FUNC_LUA + "\n" + code + "\n" + util.format(SRC_PRINT_LUA, "[RbxRefresh] Completed"));
+	var debugOutput = util.format("setSource(%s, %s, [%s])", assetInfo.RbxName, assetInfo.RbxType, assetInfo.RbxPath.join(", "));
+	log(debugOutput);
+	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + "\n" + SRC_UTILITY_FUNC_LUA + "\n" + code + "\n" + util.format(SRC_PRINT_LUA, "Completed"));
 }
 
 function requestSendRemoveFilepath(filepath) {
 	var assetInfo = getAssetRbxInfoFromFilepath(filepath);
-	var debugOutput = util.format("[RbxRefresh] removeFile(%s, %s, [%s])", assetInfo.RbxName, assetInfo.RbxType, assetInfo.RbxPath.join());
+	var debugOutput = util.format("removeFile(%s, %s, [%s])", assetInfo.RbxName, assetInfo.RbxType, assetInfo.RbxPath.join(", "));
 	var code = util.format(
 		SRC_REMOVE_FILE_CALL_LUA,
 		assetInfo.RbxName,
 		assetInfo.RbxType,
 		jsArrayToLuaArrayString(assetInfo.RbxPath));
-	console.log(debugOutput);
-	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + "\n" + SRC_UTILITY_FUNC_LUA + "\n" + code + "\n" + util.format(SRC_PRINT_LUA, "[RbxRefresh] Completed"));
+	log(debugOutput);
+	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + "\n" + SRC_UTILITY_FUNC_LUA + "\n" + code + "\n" + util.format(SRC_PRINT_LUA, "Completed"));
 }
 
 function requestSendFullUpdate(dir) {
 	var code = generateUpdateAllFilesCodeLines(dir).join("\n");
-	var debugOutput = util.format("[RbxRefresh] fullUpdate()");
-	console.log(debugOutput);
-	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + "\n" + SRC_UTILITY_FUNC_LUA + "\n" + code + "\n" + util.format(SRC_PRINT_LUA, "[RbxRefresh] Completed"));
+	var debugOutput = util.format("fullUpdate()");
+	log(debugOutput);
+	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + "\n" + SRC_UTILITY_FUNC_LUA + "\n" + code + "\n" + util.format(SRC_PRINT_LUA, "Completed"));
 }
 
 var _requestQueue = [];
@@ -252,7 +257,7 @@ function onRequest(req, res) {
 				var obj_root = JSON.parse(_sync_fs_json.toString());
 				SyncFS.SyncSourceDirFromObj(SOURCE_DIR, obj_root);
 			} else {
-				console.log("[RbxRefresh] SyncToFS Load bytes:", buffer.length);
+				log("SyncToFS Load bytes:", buffer.length);
 				_sync_fs_json += buffer;
 			}
 		});
@@ -279,7 +284,7 @@ setTimeout(function() {
 	if (program.sync) {
 		sendSource(SRC_SYNC_TO_FS_LUA);
 	}
-	console.log(util.format("[RbxRefresh] Running on PROJECT_DIR(%s)", PROJECT_DIR));
+	log(util.format("Running on PROJECT_DIR(%s)", PROJECT_DIR));
 	requestSendFullUpdate(SOURCE_DIR);
 	if (program.fullupdateonly) return;
 	chokidar.watch(SOURCE_DIR, {
