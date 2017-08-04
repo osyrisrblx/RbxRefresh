@@ -12,7 +12,11 @@ var SyncFS = require("./SyncFS");
 var Util = require("./Util");
 
 var PROJECT_DIR = ".";
-var SOURCE_DIR = ".";
+
+var jsLog = console.log;
+console.log = function(){
+    jsLog("[RbxRefresh]".bold.red, ...arguments);
+}
 
 var pkgjson = require("./package.json");
 var program = require("commander");
@@ -35,23 +39,32 @@ if (!fs.existsSync(PROJECT_DIR)) {
 
 var SOURCE_DIR = PROJECT_DIR + "/src";
 if (!fs.existsSync(SOURCE_DIR)) {
-	// let's try old behavior?
-	SOURCE_DIR = PROJECT_DIR;
-	PROJECT_DIR = SOURCE_DIR + "/../";
-	if (!fs.existsSync(PROJECT_DIR)) {
-		throw new Error("Could not find project directory!");
-	}
-	if (!fs.existsSync(SOURCE_DIR)) {
-		throw new Error("Could not find src directory!");
+	if (program.sync) {
+		fs.mkdir(SOURCE_DIR);
+	} else {
+		// let's try old behavior?
+		SOURCE_DIR = PROJECT_DIR;
+		PROJECT_DIR = SOURCE_DIR + "/../";
+		if (!fs.existsSync(PROJECT_DIR)) {
+			throw new Error("Could not find project directory!");
+		}
+		if (!fs.existsSync(SOURCE_DIR)) {
+			throw new Error("Could not find src directory!");
+		}
 	}
 }
 
 
 var config = {};
 try {
-	config = JSON.parse(fs.readFileSync(PROJECT_DIR + "/.rbxrefreshrc", "utf8"));
+	if (fs.existsSync(PROJECT_DIR + "/.rbxrefreshrc")) {
+		config = JSON.parse(fs.readFileSync(PROJECT_DIR + "/.rbxrefreshrc", "utf8"));
+	} else if (program.sync) {
+		// create .rbxrefreshrc
+	}
 } catch(e) {}
 
+var doPlaceIdGuard = true;
 var placeIdJsArray = [];
 var placeIdType = typeof(config.placeId);
 if (placeIdType == "number") {
@@ -60,6 +73,12 @@ if (placeIdType == "number") {
 	placeIdJsArray.push(parseInt(config.placeId));
 } else if (placeIdType == "object") { // array
 	placeIdJsArray = config.placeId
+} else if (placeIdType == "undefined") {
+	// placeId either didn't exist or wasn't an expected type
+	doPlaceIdGuard = false;
+} else {
+	console.error("Bad placeId type in .rbxrefreshrc!");
+	process.exit();
 }
 var placeIdLuaArray = jsArrayToLuaArrayString(placeIdJsArray);
 
@@ -83,10 +102,6 @@ var RBXTYPE_SCRIPT_ALIASES = ["Script", "server", ""];
 var RBXTYPE_MODULESCRIPT = Util.RBXTYPE_MODULESCRIPT;
 var RBXTYPE_LOCALSCRIPT = Util.RBXTYPE_LOCALSCRIPT;
 var RBXTYPE_SCRIPT = Util.RBXTYPE_SCRIPT;
-
-function log() {
-	console.log("[RbxRefresh]".bold.red, ...arguments);
-}
 
 function isAliasOf(str, aliases) {
 	for (var i = 0; i < aliases.length; i++) {
@@ -191,7 +206,7 @@ function requestSendAddFilepath(filepath) {
 	var code = generateUpdateFileCode(filepath);
 	var assetInfo = getAssetRbxInfoFromFilepath(filepath);
 	var debugOutput = util.format("setSource(%s, %s, [%s])", assetInfo.RbxName, assetInfo.RbxType, assetInfo.RbxPath.join(", "));
-	log(debugOutput);
+	console.log(debugOutput);
 	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + "\n" + SRC_UTILITY_FUNC_LUA + "\n" + code + "\n" + util.format(SRC_PRINT_LUA, "Completed"));
 }
 
@@ -203,14 +218,14 @@ function requestSendRemoveFilepath(filepath) {
 		assetInfo.RbxName,
 		assetInfo.RbxType,
 		jsArrayToLuaArrayString(assetInfo.RbxPath));
-	log(debugOutput);
+	console.log(debugOutput);
 	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + "\n" + SRC_UTILITY_FUNC_LUA + "\n" + code + "\n" + util.format(SRC_PRINT_LUA, "Completed"));
 }
 
 function requestSendFullUpdate(dir) {
 	var code = generateUpdateAllFilesCodeLines(dir).join("\n");
 	var debugOutput = util.format("fullUpdate()");
-	log(debugOutput);
+	console.log(debugOutput);
 	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + "\n" + SRC_UTILITY_FUNC_LUA + "\n" + code + "\n" + util.format(SRC_PRINT_LUA, "Completed"));
 }
 
@@ -229,7 +244,7 @@ function writeCodeToRequest(code, request) {
 }
 
 function sendSource(code) {
-	if (placeIdLuaArray) {
+	if (doPlaceIdGuard) {
 		code = util.format(SRC_GUARD_LUA, placeIdLuaArray) + "\n" + code;
 	}
 	if (_requestQueue.length > 0) {
@@ -257,7 +272,7 @@ function onRequest(req, res) {
 				var obj_root = JSON.parse(_sync_fs_json.toString());
 				SyncFS.SyncSourceDirFromObj(SOURCE_DIR, obj_root);
 			} else {
-				log("SyncToFS Load bytes:", buffer.length);
+				console.log("SyncToFS Load bytes:", buffer.length);
 				_sync_fs_json += buffer;
 			}
 		});
@@ -282,9 +297,10 @@ http.get("http://localhost:8888?kill=true").on("error", function(e){});
 setTimeout(function() {	
 	http.createServer(onRequest).listen(8888, "0.0.0.0");
 	if (program.sync) {
+		console.log("Syncing..");
 		sendSource(SRC_SYNC_TO_FS_LUA);
 	}
-	log(util.format("Running on PROJECT_DIR(%s)", PROJECT_DIR));
+	console.log(util.format("Running on PROJECT_DIR(%s)", PROJECT_DIR));
 	requestSendFullUpdate(SOURCE_DIR);
 	if (program.fullupdateonly) return;
 	chokidar.watch(SOURCE_DIR, {
