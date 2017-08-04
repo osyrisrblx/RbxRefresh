@@ -1,3 +1,5 @@
 .dropbox
 .DS_Store
 node_modules/
+.vs_code
+.vs
