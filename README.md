@@ -1,5 +1,5 @@
 # RbxRefresh
-With RbxRefresh, you can use external editors (Like Sublime Text 3 or Atom) for ROBLOX development.
+With RbxRefresh, you can use external editors (Like Visual Studio Code, Sublime Text 3 or Atom) for ROBLOX development.
 RbxRefresh syncs your changes back into studio every time you save your files locally.
 
 ## Prerequisites
