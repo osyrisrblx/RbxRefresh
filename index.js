@@ -7,6 +7,7 @@ var http = require("http");
 var url = require("url");
 var path = require("path");
 var util = require("util");
+var spawnSync = require("child_process").spawnSync;
 
 var SyncFS = require("./SyncFS");
 var Util = require("./Util");
@@ -94,6 +95,7 @@ var SRC_SYNC_TO_FS_LUA = getTemplate("templates/SyncToFs.template.lua");
 var SRC_GUARD_LUA = getTemplate("templates/Guard.template.lua");
 
 var FSEXT_LUA = Util.FSEXT_LUA;
+var FSEXT_MOON = Util.FSEXT_MOON;
 
 var RBXTYPE_MODULESCRIPT_ALIASES = ["ModuleScript", "module"];
 var RBXTYPE_LOCALSCRIPT_ALIASES = ["LocalScript", "local", "client"];
@@ -119,7 +121,7 @@ function generateUpdateAllFilesCode_rTraversal(dir, outCodeLines) {
 			generateUpdateAllFilesCode_rTraversal(itrFilePath, outCodeLines);
 		} else {
 			var fileExt = path.extname(itrFilePath);
-			if (fileExt == FSEXT_LUA) {
+			if (fileExt == FSEXT_LUA || fileExt == FSEXT_MOON) {
 				outCodeLines.push(generateUpdateFileCode(itrFilePath));
 			}
 		}
@@ -157,7 +159,7 @@ function matchAssetRbxType(str) {
 }
 
 function getAssetRbxInfoFromFilepath(filepath) {
-	var assetFullName = path.basename(filepath, FSEXT_LUA);
+	var assetFullName = path.basename(filepath, path.extname(filepath));
 	var assetRbxName = "";
 	var assetRbxType = path.extname(assetFullName).replace(".", "");
 
@@ -188,11 +190,16 @@ function getAssetRbxInfoFromFilepath(filepath) {
 
 function generateUpdateFileCode(filepath) {
 	var fileExt = path.extname(filepath);
-	if (fileExt != FSEXT_LUA) {
+	if (fileExt != FSEXT_LUA && fileExt != FSEXT_MOON) {
 		return "";
 	}
 	var assetInfo = getAssetRbxInfoFromFilepath(filepath);
-	var fileContents = fs.readFileSync(filepath).toString();
+	var fileContents
+	if (fileExt == FSEXT_LUA) {
+		fileContents = fs.readFileSync(filepath).toString();
+	} else if (fileExt == FSEXT_MOON) {
+		fileContents = spawnSync("moonc -p " + filepath, {shell: true}).stdout.toString();
+	}
 	return util.format(
 		SRC_SET_SOURCE_CALL_LUA,
 		assetInfo.RbxName,

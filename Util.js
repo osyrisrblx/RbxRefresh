@@ -4,6 +4,7 @@ module.exports = {
 	RBXTYPE_LOCALSCRIPT: "LocalScript",
 	RBXTYPE_SCRIPT: "Script",
 	FSEXT_LUA: ".lua",
+	FSEXT_MOON: ".moon",
 
 	IsScript: function(type) {
 		return type == this.RBXTYPE_MODULESCRIPT ||
