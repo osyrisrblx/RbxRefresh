@@ -1,4 +1,4 @@
-#!/usr/bin/env node 
+#!/usr/bin/env node
 
 var chokidar = require("chokidar");
 var colors = require("colors");
@@ -27,6 +27,7 @@ program
 	.arguments("[dir]")
 	.option("-s, --sync", "Enables sync to filesystem")
 	.option("-f, --fullupdateonly", "Terminates server after full update")
+	.option("-p, --poll", "Makes Chokidar use polling mode")
 	.action(function(env) {
 		if (env) {
 			PROJECT_DIR = env;
@@ -301,7 +302,7 @@ function onRequest(req, res) {
 
 http.get("http://localhost:8888?kill=true").on("error", function(e){});
 
-setTimeout(function() {	
+setTimeout(function() {
 	http.createServer(onRequest).listen(8888, "0.0.0.0");
 	if (program.sync) {
 		console.log("Syncing..");
@@ -313,14 +314,11 @@ setTimeout(function() {
 	chokidar.watch(SOURCE_DIR, {
 		ignored: /(^|[\/\\])\.(?!$)/,
 		persistent: true,
-		ignoreInitial: true
+		ignoreInitial: false,
+		usePolling: program.polling ? true : false
 	})
-	.on("change", function(filepath) {
-		requestSendAddFilepath(filepath);
-	})
-	.on("add", function(filepath) {
-		requestSendAddFilepath(filepath);
-	})
+	.on("change", requestSendAddFilepath)
+	.on("add", requestSendAddFilepath)
 	.on("unlink", function(filepath) {
 		requestSendRemoveFilepath(filepath);
 		requestSendFullUpdate(SOURCE_DIR);
