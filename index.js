@@ -28,6 +28,7 @@ program
 	.option("-s, --sync", "Enables sync to filesystem")
 	.option("-f, --fullupdateonly", "Terminates server after full update")
 	.option("-p, --poll", "Makes Chokidar use polling mode")
+	.option("--debug", "Enables debug mode")
 	.action(function(env) {
 		if (env) {
 			PROJECT_DIR = env;
@@ -210,7 +211,9 @@ function generateUpdateFileCode(filepath) {
 }
 
 function requestSendAddFilepath(filepath) {
-	console.log("requestSendAddFilepath", filepath);
+	if (program.debug) {
+		console.log("change", filepath)
+	}
 	var code = generateUpdateFileCode(filepath);
 	var assetInfo = getAssetRbxInfoFromFilepath(filepath);
 	var debugOutput = util.format("setSource(%s, %s, [%s])", assetInfo.RbxName, assetInfo.RbxType, assetInfo.RbxPath.join(", "));
@@ -267,6 +270,9 @@ function sendSource(code) {
 var _sync_fs_json = "";
 
 function onRequest(req, res) {
+	if (program.debug) {
+		console.log(req, res);
+	}
 	if (req.method == "POST") {
 		var buffer = "";
 		req.on("data", function (data) {
@@ -311,8 +317,6 @@ setTimeout(function() {
 	console.log(util.format("Running on PROJECT_DIR(%s)", PROJECT_DIR));
 	requestSendFullUpdate(SOURCE_DIR);
 	if (program.fullupdateonly) return;
-
-	console.log("SOURCE_DIR", SOURCE_DIR);
 	chokidar.watch(SOURCE_DIR, {
 		ignored: /(^|[\/\\])\.(?![$\/\\])/,
 		persistent: true,
@@ -324,5 +328,5 @@ setTimeout(function() {
 	.on("unlink", function(filepath) {
 		requestSendRemoveFilepath(filepath);
 		requestSendFullUpdate(SOURCE_DIR);
-	})
+	});
 }, 1000);
