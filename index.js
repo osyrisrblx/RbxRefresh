@@ -315,7 +315,7 @@ setTimeout(function() {
 		ignored: /(^|[\/\\])\.(?!$)/,
 		persistent: true,
 		ignoreInitial: false,
-		usePolling: program.polling ? true : false
+		usePolling: program.poll ? true : false
 	})
 	.on("change", requestSendAddFilepath)
 	.on("add", requestSendAddFilepath)
