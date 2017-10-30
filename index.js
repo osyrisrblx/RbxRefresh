@@ -212,7 +212,7 @@ function generateUpdateFileCode(filepath) {
 
 function requestSendAddFilepath(filepath) {
 	if (program.debug) {
-		console.log("change", filepath)
+		console.log("DEBUG", "change", filepath)
 	}
 	var code = generateUpdateFileCode(filepath);
 	var assetInfo = getAssetRbxInfoFromFilepath(filepath);
@@ -271,7 +271,7 @@ var _sync_fs_json = "";
 
 function onRequest(req, res) {
 	if (program.debug) {
-		console.log(req, res);
+		console.log("DEBUG", "onRequest");
 	}
 	if (req.method == "POST") {
 		var buffer = "";
