@@ -56,7 +56,6 @@ if (!fs.existsSync(SOURCE_DIR)) {
 	}
 }
 
-
 var config = {};
 try {
 	if (fs.existsSync(PROJECT_DIR + "/.rbxrefreshrc")) {
@@ -211,6 +210,7 @@ function generateUpdateFileCode(filepath) {
 }
 
 function requestSendAddFilepath(filepath) {
+	console.log("requestSendAddFilepath", filepath);
 	var code = generateUpdateFileCode(filepath);
 	var assetInfo = getAssetRbxInfoFromFilepath(filepath);
 	var debugOutput = util.format("setSource(%s, %s, [%s])", assetInfo.RbxName, assetInfo.RbxType, assetInfo.RbxPath.join(", "));
@@ -311,10 +311,12 @@ setTimeout(function() {
 	console.log(util.format("Running on PROJECT_DIR(%s)", PROJECT_DIR));
 	requestSendFullUpdate(SOURCE_DIR);
 	if (program.fullupdateonly) return;
+
+	console.log("SOURCE_DIR", SOURCE_DIR);
 	chokidar.watch(SOURCE_DIR, {
-		ignored: /(^|[\/\\])\.(?!$)/,
+		ignored: /(^|[\/\\])\.(?![$\/\\])/,
 		persistent: true,
-		ignoreInitial: false,
+		ignoreInitial: true,
 		usePolling: program.poll ? true : false
 	})
 	.on("change", requestSendAddFilepath)
@@ -322,5 +324,5 @@ setTimeout(function() {
 	.on("unlink", function(filepath) {
 		requestSendRemoveFilepath(filepath);
 		requestSendFullUpdate(SOURCE_DIR);
-	});
+	})
 }, 1000);
