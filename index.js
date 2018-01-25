@@ -14,11 +14,6 @@ var Util = require("./Util");
 
 var PROJECT_DIR = ".";
 
-var jsLog = console.log;
-console.log = function(){
-    jsLog("[RbxRefresh]".bold.red, ...arguments);
-}
-
 var pkgjson = require("./package.json");
 var program = require("commander");
 program
@@ -212,12 +207,12 @@ function generateUpdateFileCode(filepath) {
 
 function requestSendAddFilepath(filepath) {
 	if (program.debug) {
-		console.log("DEBUG", "change", filepath)
+		console.log("[RbxRefresh]".bold.red, "DEBUG", "change", filepath)
 	}
 	var code = generateUpdateFileCode(filepath);
 	var assetInfo = getAssetRbxInfoFromFilepath(filepath);
 	var debugOutput = util.format("setSource(%s, %s, [%s])", assetInfo.RbxName, assetInfo.RbxType, assetInfo.RbxPath.join(", "));
-	console.log(debugOutput);
+	console.log("[RbxRefresh]".bold.red, debugOutput);
 	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + "\n" + SRC_UTILITY_FUNC_LUA + "\n" + code + "\n" + util.format(SRC_PRINT_LUA, "Completed"));
 }
 
@@ -229,14 +224,14 @@ function requestSendRemoveFilepath(filepath) {
 		assetInfo.RbxName,
 		assetInfo.RbxType,
 		jsArrayToLuaArrayString(assetInfo.RbxPath));
-	console.log(debugOutput);
+	console.log("[RbxRefresh]".bold.red, debugOutput);
 	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + "\n" + SRC_UTILITY_FUNC_LUA + "\n" + code + "\n" + util.format(SRC_PRINT_LUA, "Completed"));
 }
 
 function requestSendFullUpdate(dir) {
 	var code = generateUpdateAllFilesCodeLines(dir).join("\n");
 	var debugOutput = util.format("fullUpdate()");
-	console.log(debugOutput);
+	console.log("[RbxRefresh]".bold.red, debugOutput);
 	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + "\n" + SRC_UTILITY_FUNC_LUA + "\n" + code + "\n" + util.format(SRC_PRINT_LUA, "Completed"));
 }
 
@@ -271,7 +266,7 @@ var _sync_fs_json = "";
 
 function onRequest(req, res) {
 	if (program.debug) {
-		console.log("DEBUG", "onRequest");
+		console.log("[RbxRefresh]".bold.red, "DEBUG", "onRequest");
 	}
 	if (req.method == "POST") {
 		var buffer = "";
@@ -286,7 +281,7 @@ function onRequest(req, res) {
 				var obj_root = JSON.parse(_sync_fs_json.toString());
 				SyncFS.SyncSourceDirFromObj(SOURCE_DIR, obj_root);
 			} else {
-				console.log("SyncToFS Load bytes:", buffer.length);
+				console.log("[RbxRefresh]".bold.red, "SyncToFS Load bytes:", buffer.length);
 				_sync_fs_json += buffer;
 			}
 		});
@@ -311,10 +306,10 @@ http.get("http://localhost:8888?kill=true").on("error", function(e){});
 setTimeout(function() {
 	http.createServer(onRequest).listen(8888, "0.0.0.0");
 	if (program.sync) {
-		console.log("Syncing..");
+		console.log("[RbxRefresh]".bold.red, "Syncing..");
 		sendSource(SRC_SYNC_TO_FS_LUA);
 	}
-	console.log(util.format("Running on PROJECT_DIR(%s)", PROJECT_DIR));
+	console.log("[RbxRefresh]".bold.red, util.format("Running on PROJECT_DIR(%s)", PROJECT_DIR));
 	requestSendFullUpdate(SOURCE_DIR);
 	if (program.fullupdateonly) return;
 	chokidar.watch(SOURCE_DIR, {
