@@ -309,7 +309,7 @@ setTimeout(function() {
 		console.log("[RbxRefresh]".bold.red, "Syncing..");
 		sendSource(SRC_SYNC_TO_FS_LUA);
 	}
-	console.log("[RbxRefresh]".bold.red, util.format("Running on PROJECT_DIR(%s)", PROJECT_DIR));
+	console.log("[RbxRefresh]".bold.red, util.format("Running on PROJECT_DIR(%s)", path.resolve(PROJECT_DIR)));
 	requestSendFullUpdate(SOURCE_DIR);
 	if (program.fullupdateonly) return;
 	chokidar.watch(SOURCE_DIR, {
