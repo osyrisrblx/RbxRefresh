@@ -44,14 +44,20 @@ globals = {
 
 	-- math library
 	"math.clamp",
-	"math.sign"
+	"math.sign",
+
+	-- plugin
+	"plugin",
 }
 
 ignore = {
 	-- fix methods
 	"self",
 	"super",
-	"%s"
+}
+
+exclude_files = {
+	"templates/*"
 }
 
 -- prevent max line lengths
