@@ -2,10 +2,6 @@ local RBXTYPE_MODULESCRIPT = "ModuleScript"
 local RBXTYPE_LOCALSCRIPT = "LocalScript"
 local RBXTYPE_SCRIPT = "Script"
 
-local function doIgnore()
-	return false
-end
-
 local function isScript(itrChild)
 	return itrChild.ClassName == RBXTYPE_SCRIPT or itrChild.ClassName == RBXTYPE_LOCALSCRIPT or itrChild.ClassName == RBXTYPE_MODULESCRIPT
 end
@@ -27,36 +23,36 @@ local function hasScriptChildren(itr)
 end
 
 local function consObj(name, type, hasSource)
-	local rtv = { Name = name; Type = type; Children = {}; }
+	local rtv = { name = name, type = type, children = {} }
 	if hasSource == true then
-		rtv.Source = ""
+		rtv.source = ""
 	end
 	return rtv
 end
 
-local function pushDir(obj, dirname, dirtype)
-	local rtv = consObj(dirname, dirtype, false)
-	table.insert(obj.Children, rtv)
+local function pushDir(obj, dirName, dirType)
+	local rtv = consObj(dirName, dirType, false)
+	table.insert(obj.children, rtv)
 	return rtv
 end
 
-local function pushScript(obj, dirname, dirtype, source)
-	local rtv = consObj(dirname, dirtype, true)
-	rtv.Source = source
-	table.insert(obj.Children, rtv)
+local function pushScript(obj, dirName, dirType, source)
+	local rtv = consObj(dirName, dirType, true)
+	rtv.source = source
+	table.insert(obj.children, rtv)
 	return rtv
 end
 
-local function syncRTraversal(instance, obj, use_children)
-	local instance_children
-	if use_children ~= nil then
-		instance_children = use_children
+local function syncRTraversal(instance, obj, useChildren)
+	local instanceChildren
+	if useChildren ~= nil then
+		instanceChildren = useChildren
 	else
-		instance_children = instance:GetChildren()
+		instanceChildren = instance:GetChildren()
 	end
-	for i=1, #instance_children do
-		local itr = instance_children[i]
-		if doIgnore(itr) ~= true and hasScriptChildren(itr) == true then
+	for i = 1, #instanceChildren do
+		local itr = instanceChildren[i]
+		if hasScriptChildren(itr) == true then
 			local itrObj
 			if isScript(itr) then
 				itrObj = pushScript(obj, itr.Name, itr.ClassName, itr.Source)
@@ -68,8 +64,8 @@ local function syncRTraversal(instance, obj, use_children)
 	end
 end
 
-local obj_game = consObj("game", "DataModel", false)
-syncRTraversal(game, obj_game, {
+local objGame = consObj("game", "DataModel", false)
+syncRTraversal(game, objGame, {
 	game:FindFirstChild("Workspace"),
 	game:FindFirstChild("ReplicatedFirst"),
 	game:FindFirstChild("ReplicatedStorage"),
@@ -80,16 +76,16 @@ syncRTraversal(game, obj_game, {
 	game:FindFirstChild("Chat")
 })
 
-local json_str = game:GetService("HttpService"):JSONEncode(obj_game)
-local json_str_len = #json_str
-local request_size = 1000000
+local jsonStr = game:GetService("HttpService"):JSONEncode(objGame)
+local jsonStrLen = #jsonStr
+local requestSize = 1000000
 local i = 1
-while i < json_str_len do
-	local i_end = i + request_size
-	if i_end > json_str_len then
-		i_end = json_str_len
+while i < jsonStrLen do
+	local iEnd = i + requestSize
+	if iEnd > jsonStrLen then
+		iEnd = jsonStrLen
 	end
-	game:GetService("HttpService"):PostAsync("http://localhost:8888", string.sub(json_str, i, i_end))
-	i = i_end + 1
+	game:GetService("HttpService"):PostAsync("http://localhost:8888", string.sub(jsonStr, i, iEnd))
+	i = iEnd + 1
 end
 game:GetService("HttpService"):PostAsync("http://localhost:8888", "$$END$$")

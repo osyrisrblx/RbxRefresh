@@ -18,18 +18,18 @@ function mkdir(path) {
     }
 }
 function objRbxTraversal(objPath, obj) {
-    for (var i = 0; i < obj.Children.length; i++) {
-        var child = obj.Children[i];
-        var childPath = path.resolve(objPath, child.Name);
-        if (Utility_1.isScript(child.Type)) {
-            childPath = childPath + "." + child.Type + Utility_1.FSEXT_LUA;
+    for (var i = 0; i < obj.children.length; i++) {
+        var child = obj.children[i];
+        var childPath = path.resolve(objPath, child.name);
+        if (Utility_1.isScript(child.type)) {
+            childPath = childPath + "." + child.type + Utility_1.FSEXT_LUA;
             console.log("Create[FILE]:", childPath);
             if (pathGetStat(childPath) != null) {
                 fs.unlinkSync(childPath);
             }
-            fs.writeFileSync(childPath, child.Source);
-            childPath = childPath + "." + child.Type;
-            if (child.Children.length > 0) {
+            fs.writeFileSync(childPath, child.source);
+            childPath = childPath + "." + child.type;
+            if (child.children.length > 0) {
                 mkdir(childPath);
             }
         }
@@ -43,3 +43,4 @@ function syncSourceDirFromObj(sourceDir, rootObj) {
     objRbxTraversal(sourceDir, rootObj);
 }
 exports.syncSourceDirFromObj = syncSourceDirFromObj;
+//# sourceMappingURL=SyncFS.js.map

@@ -3,14 +3,14 @@ interface RbxRefreshConfig {
 }
 
 interface RbxObject {
-	Children: RbxObject[];
-	Name: string;
-	Source: string;
-	Type: string;
+	children: RbxObject[];
+	name: string;
+	source: string;
+	type: string;
 }
 
 interface RbxInfo {
-	RbxName: string;
-	RbxType: string;
-	RbxPath: string[];
+	name: string;
+	type: string;
+	path: string[];
 }

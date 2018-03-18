@@ -11,23 +11,23 @@ import { spawnSync } from "child_process";
 
 import { syncSourceDirFromObj } from "./SyncFS";
 import {
-	RBXTYPE_MODULESCRIPT,
-	RBXTYPE_LOCALSCRIPT,
-	RBXTYPE_SCRIPT,
-	RBXTYPE_MODULESCRIPT_ALIASES,
-	RBXTYPE_LOCALSCRIPT_ALIASES,
-	RBXTYPE_SCRIPT_ALIASES,
-	FSEXT_LUA,
-	FSEXT_MOON,
 	isAliasOf,
 	jsArrayToLuaArrayString,
 	matchAssetRbxType,
-	SRC_UTILITY_FUNC_LUA,
-	SRC_SET_SOURCE_CALL_LUA,
-	SRC_REMOVE_FILE_CALL_LUA,
-	SRC_PRINT_LUA,
-	SRC_SYNC_TO_FS_LUA,
+	FSEXT_LUA,
+	FSEXT_MOON,
+	RBXTYPE_LOCALSCRIPT_ALIASES,
+	RBXTYPE_LOCALSCRIPT,
+	RBXTYPE_MODULESCRIPT_ALIASES,
+	RBXTYPE_MODULESCRIPT,
+	RBXTYPE_SCRIPT_ALIASES,
+	RBXTYPE_SCRIPT,
 	SRC_GUARD_LUA,
+	SRC_PRINT_LUA,
+	SRC_REMOVE_FILE_CALL_LUA,
+	SRC_SET_SOURCE_CALL_LUA,
+	SRC_SYNC_TO_FS_LUA,
+	SRC_UTILITY_FUNC_LUA
 } from "./Utility";
 
 let jsLog = console.log;
@@ -79,13 +79,14 @@ try {
 	} else if (program.sync) {
 		// create .rbxrefreshrc
 	}
-} catch (e) { }
+} catch (e) {}
 
 let doPlaceIdGuard = true;
 let placeIdJsArray: number[] = [];
 if (typeof config.placeId == "number") {
 	placeIdJsArray.push(config.placeId);
-} else if (typeof config.placeId == "object") { // array
+} else if (typeof config.placeId == "object") {
+	// array
 	placeIdJsArray = config.placeId;
 } else if (typeof config.placeId == "undefined") {
 	// placeId either didn't exist or wasn't an expected type
@@ -96,13 +97,13 @@ if (typeof config.placeId == "number") {
 }
 let placeIdLuaArray = jsArrayToLuaArrayString(placeIdJsArray);
 
-function generateUpdateAllFilesCodeRbxTraversal(dir: string, outCodeLines: string[]): void {
-	fs.readdirSync(dir).forEach(function (itrFileName) {
-		var itrFilePath = path.resolve(dir, itrFileName);
+function generateUpdateAllFilesCodeRbxTraversal(dir: string, outCodeLines: string[]) {
+	fs.readdirSync(dir).forEach(itrFileName => {
+		let itrFilePath = path.resolve(dir, itrFileName);
 		if (fs.statSync(itrFilePath).isDirectory()) {
 			generateUpdateAllFilesCodeRbxTraversal(itrFilePath, outCodeLines);
 		} else {
-			var fileExt = path.extname(itrFilePath);
+			let fileExt = path.extname(itrFilePath);
 			if (fileExt == FSEXT_LUA || fileExt == FSEXT_MOON) {
 				outCodeLines.push(generateUpdateFileCode(itrFilePath));
 			}
@@ -111,96 +112,129 @@ function generateUpdateAllFilesCodeRbxTraversal(dir: string, outCodeLines: strin
 }
 
 function generateUpdateAllFilesCodeLines(dir: string): string[] {
-	var outCodeLines: string[] = [];
+	let outCodeLines: string[] = [];
 	generateUpdateAllFilesCodeRbxTraversal(dir, outCodeLines);
 	return outCodeLines;
 }
 
-function getAssetRbxInfoFromFilepath(filepath: string): RbxInfo {
-	var assetFullName = path.basename(filepath, path.extname(filepath));
-	var assetRbxName = "";
-	var assetRbxType = path.extname(assetFullName).replace(".", "");
+function getAssetRbxInfoFromFilePath(filePath: string): RbxInfo {
+	let assetFullName = path.basename(filePath, path.extname(filePath));
+	let assetRbxName = "";
+	let assetType = path.extname(assetFullName).replace(".", "");
 
-	if (assetRbxType == "") {
-		if (filepath.indexOf("ServerScriptService") != -1) {
-			assetRbxType = RBXTYPE_SCRIPT;
-		} else if (filepath.indexOf("StarterPlayer") != -1) {
-			assetRbxType = RBXTYPE_LOCALSCRIPT;
+	if (assetType == "") {
+		if (filePath.indexOf("ServerScriptService") != -1) {
+			assetType = RBXTYPE_SCRIPT;
+		} else if (filePath.indexOf("StarterPlayer") != -1) {
+			assetType = RBXTYPE_LOCALSCRIPT;
 		} else {
-			assetRbxType = RBXTYPE_MODULESCRIPT;
+			assetType = RBXTYPE_MODULESCRIPT;
 		}
 		assetRbxName = assetFullName;
-
 	} else {
-		assetRbxName = path.basename(assetFullName, "." + assetRbxType);
-		assetRbxType = matchAssetRbxType(assetRbxType);
+		assetRbxName = path.basename(assetFullName, "." + assetType);
+		assetType = matchAssetRbxType(assetType);
 	}
 
-	var relativeFilepathArray = path.relative(SOURCE_DIR, filepath).split(path.sep);
-	relativeFilepathArray.pop();
+	let relativeFilePathArray = path.relative(SOURCE_DIR, filePath).split(path.sep);
+	relativeFilePathArray.pop();
 
 	return {
-		RbxName: assetRbxName,
-		RbxType: assetRbxType,
-		RbxPath: relativeFilepathArray
+		name: assetRbxName,
+		type: assetType,
+		path: relativeFilePathArray
 	};
 }
 
-function generateUpdateFileCode(filepath: string): string {
-	var fileExt = path.extname(filepath);
+function generateUpdateFileCode(filePath: string): string {
+	let fileExt = path.extname(filePath);
 	if (fileExt != FSEXT_LUA && fileExt != FSEXT_MOON) {
 		return "";
 	}
-	var assetInfo = getAssetRbxInfoFromFilepath(filepath);
-	var fileContents
+	let assetInfo = getAssetRbxInfoFromFilePath(filePath);
+	let fileContents = "";
 	if (fileExt == FSEXT_LUA) {
-		fileContents = fs.readFileSync(filepath).toString();
+		fileContents = fs.readFileSync(filePath).toString();
 	} else if (fileExt == FSEXT_MOON) {
-		fileContents = spawnSync("moonc -p " + filepath, { shell: true }).stdout.toString();
+		fileContents = spawnSync("moonc -p " + filePath, {
+			shell: true
+		}).stdout.toString();
+	}
+	if (fileContents.length === 0) {
+		return "";
 	}
 	return util.format(
 		SRC_SET_SOURCE_CALL_LUA,
-		assetInfo.RbxName,
-		assetInfo.RbxType,
-		jsArrayToLuaArrayString(assetInfo.RbxPath),
+		assetInfo.name,
+		assetInfo.type,
+		jsArrayToLuaArrayString(assetInfo.path),
 		fileContents
 	);
 }
 
-function requestSendAddFilepath(filepath: string): void {
-	var code = generateUpdateFileCode(filepath);
-	var assetInfo = getAssetRbxInfoFromFilepath(filepath);
-	var debugOutput = util.format("setSource(%s, %s, [%s])", assetInfo.RbxName, assetInfo.RbxType, assetInfo.RbxPath.join(", "));
+function requestSendAddFilePath(filePath: string, attempt = 1) {
+	let code = generateUpdateFileCode(filePath);
+	if (code.length === 0) {
+		console.log("File empty!");
+		if (attempt < 5) {
+			console.log("Retrying..");
+			setTimeout(requestSendAddFilePath, 100, filePath, attempt + 1);
+			return;
+		}
+	}
+	let assetInfo = getAssetRbxInfoFromFilePath(filePath);
+	let debugOutput = util.format("setSource(%s, %s, [%s])", assetInfo.name, assetInfo.type, assetInfo.path.join(", "));
 	console.log(debugOutput);
-	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + "\n" + SRC_UTILITY_FUNC_LUA + "\n" + code + "\n" + util.format(SRC_PRINT_LUA, "Completed"));
+	sendSource([
+		util.format(SRC_PRINT_LUA, debugOutput),
+		SRC_UTILITY_FUNC_LUA,
+		code,
+		util.format(SRC_PRINT_LUA, "Completed")
+	]);
 }
 
-function requestSendRemoveFilepath(filepath: string): void {
-	var assetInfo = getAssetRbxInfoFromFilepath(filepath);
-	var debugOutput = util.format("removeFile(%s, %s, [%s])", assetInfo.RbxName, assetInfo.RbxType, assetInfo.RbxPath.join(", "));
-	var code = util.format(
+function requestSendRemoveFilePath(filePath: string) {
+	let assetInfo = getAssetRbxInfoFromFilePath(filePath);
+	let debugOutput = util.format(
+		"removeFile(%s, %s, [%s])",
+		assetInfo.name,
+		assetInfo.type,
+		assetInfo.path.join(", ")
+	);
+	let code = util.format(
 		SRC_REMOVE_FILE_CALL_LUA,
-		assetInfo.RbxName,
-		assetInfo.RbxType,
-		jsArrayToLuaArrayString(assetInfo.RbxPath));
+		assetInfo.name,
+		assetInfo.type,
+		jsArrayToLuaArrayString(assetInfo.path)
+	);
 	console.log(debugOutput);
-	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + "\n" + SRC_UTILITY_FUNC_LUA + "\n" + code + "\n" + util.format(SRC_PRINT_LUA, "Completed"));
+	sendSource([
+		util.format(SRC_PRINT_LUA, debugOutput),
+		SRC_UTILITY_FUNC_LUA,
+		code,
+		util.format(SRC_PRINT_LUA, "Completed")
+	]);
 }
 
-function requestSendFullUpdate(dir: string): void {
-	var code = generateUpdateAllFilesCodeLines(dir).join("\n");
-	var debugOutput = util.format("fullUpdate()");
+function requestSendFullUpdate(dir: string) {
+	let code = generateUpdateAllFilesCodeLines(dir).join("\n");
+	let debugOutput = util.format("fullUpdate()");
 	console.log(debugOutput);
-	sendSource(util.format(SRC_PRINT_LUA, debugOutput) + "\n" + SRC_UTILITY_FUNC_LUA + "\n" + code + "\n" + util.format(SRC_PRINT_LUA, "Completed"));
+	sendSource([
+		util.format(SRC_PRINT_LUA, debugOutput),
+		SRC_UTILITY_FUNC_LUA,
+		code,
+		util.format(SRC_PRINT_LUA, "Completed")
+	]);
 }
 
-var responseQueue: http.ServerResponse[] = [];
-var codeQueue: string[] = [];
+let responseQueue: http.ServerResponse[] = [];
+let codeQueue: string[] = [];
 
-function writeCodeToRequest(code: string | undefined, response: http.ServerResponse | undefined): void {
+function writeCodeToRequest(code?: string, response?: http.ServerResponse) {
 	if (!code || !response) return;
-	response.writeHead(200, { "Content-Type": "text/plain" });
-	response.end(code, function () {
+	response.writeHead(200, { "Content-Type": "application/json" });
+	response.end(code, () => {
 		if (program.fullupdateonly) {
 			if (codeQueue.length == 0) {
 				process.exit();
@@ -209,10 +243,11 @@ function writeCodeToRequest(code: string | undefined, response: http.ServerRespo
 	});
 }
 
-function sendSource(code: string): void {
+function sendSource(codeArray: string[]) {
 	if (doPlaceIdGuard) {
-		code = util.format(SRC_GUARD_LUA, placeIdLuaArray) + "\n" + code;
+		codeArray.unshift(util.format(SRC_GUARD_LUA, placeIdLuaArray));
 	}
+	let code = codeArray.join("\n");
 	if (responseQueue.length > 0) {
 		while (responseQueue.length > 0) {
 			writeCodeToRequest(code, responseQueue.shift());
@@ -222,17 +257,17 @@ function sendSource(code: string): void {
 	}
 }
 
-var syncFsJson = "";
+let syncFsJson = "";
 
-function onRequest(req: http.IncomingMessage, res: http.ServerResponse): void {
+function onRequest(req: http.IncomingMessage, res: http.ServerResponse) {
 	if (req.method == "POST") {
-		var buffer = "";
-		req.on("data", function(data: string | Buffer) {
-			buffer += data;
+		let buffer = "";
+		req.on("data", (data: string | Buffer) => {
+			buffer += data.toString();
 		});
-		req.on("end", function(): void {
-			res.writeHead(200, { "Content-Type": "text/html" });
-			res.end("ok");
+		req.on("end", () => {
+			res.writeHead(200, { "Content-Type": "application/json" });
+			res.end();
 			if (buffer == "$$END$$") {
 				syncSourceDirFromObj(SOURCE_DIR, JSON.parse(syncFsJson.toString()));
 			} else {
@@ -242,7 +277,7 @@ function onRequest(req: http.IncomingMessage, res: http.ServerResponse): void {
 		});
 	} else {
 		if (typeof req.url == "string") {
-			var args = url.parse(req.url, true).query;
+			let args = url.parse(req.url, true).query;
 			if (args.kill == "true") {
 				process.exit();
 				return;
@@ -258,27 +293,28 @@ function onRequest(req: http.IncomingMessage, res: http.ServerResponse): void {
 	}
 }
 
-http.get("http://localhost:8888?kill=true").on("error", function (e) { });
+http.get("http://localhost:8888?kill=true").on("error", e => {});
 
-setTimeout(function () {
+setTimeout(() => {
 	http.createServer(onRequest).listen(8888, "0.0.0.0");
 	if (program.sync) {
 		console.log("Syncing..");
-		sendSource(SRC_SYNC_TO_FS_LUA);
+		sendSource([SRC_SYNC_TO_FS_LUA]);
 	}
-	console.log(util.format("Running on PROJECT_DIR(%s)", path.resolve(PROJECT_DIR)));
+	console.log(util.format("[%s] Running on PROJECT_DIR(%s)", pkgjson.version, path.resolve(PROJECT_DIR)));
 	requestSendFullUpdate(SOURCE_DIR);
 	if (program.fullupdateonly) return;
-	chokidar.watch(SOURCE_DIR, {
-		ignored: /(^|[\/\\])\.(?![$\/\\])/,
-		persistent: true,
-		ignoreInitial: true,
-		usePolling: program.poll ? true : false
-	})
-		.on("change", requestSendAddFilepath)
-		.on("add", requestSendAddFilepath)
-		.on("unlink", function (filepath) {
-			requestSendRemoveFilepath(filepath);
+	chokidar
+		.watch(SOURCE_DIR, {
+			ignored: /(^|[\/\\])\.(?![$\/\\])/,
+			persistent: true,
+			ignoreInitial: true,
+			usePolling: program.poll ? true : false
+		})
+		.on("change", (path: string) => requestSendAddFilePath(path))
+		.on("add", (path: string) => requestSendAddFilePath(path))
+		.on("unlink", (path: string) => {
+			requestSendRemoveFilePath(path);
 			requestSendFullUpdate(SOURCE_DIR);
 		});
 }, 1000);
