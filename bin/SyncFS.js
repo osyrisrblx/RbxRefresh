@@ -13,7 +13,7 @@ function pathGetStat(path) {
 }
 function mkdir(path) {
     console.log("Create[DIR]:", path);
-    if (pathGetStat(path) == null) {
+    if (pathGetStat(path) === null) {
         fs.mkdirSync(path);
     }
 }
@@ -24,7 +24,7 @@ function objRbxTraversal(objPath, obj) {
         if (Utility_1.isScript(child.type)) {
             childPath = childPath + "." + child.type + Utility_1.FSEXT_LUA;
             console.log("Create[FILE]:", childPath);
-            if (pathGetStat(childPath) != null) {
+            if (pathGetStat(childPath) !== null) {
                 fs.unlinkSync(childPath);
             }
             fs.writeFileSync(childPath, child.source);

@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 import * as chokidar from "chokidar";
 import * as colors from "colors";
+import * as commander from "commander";
 import * as fs from "fs";
 import * as http from "http";
 import * as path from "path";
-import * as program from "commander";
 import * as url from "url";
 import * as util from "util";
 import * as uuid from "uuid/v1";
@@ -39,7 +39,7 @@ class Project {
 		}
 		this.sourceDir = projectDir.replace(/\/+$/, "") + "/src";
 		if (!fs.existsSync(this.sourceDir)) {
-			if (program.sync) {
+			if (commander.sync) {
 				fs.mkdirSync(this.sourceDir);
 			} else {
 				// let's try old behavior?
@@ -59,7 +59,7 @@ class Project {
 let projects: Project[] = [];
 
 let pkgjson = require("./../package.json");
-program
+commander
 	.version(pkgjson.version)
 	.usage("rbxrefresh [options] [dir]")
 	.arguments("[dir...]")
@@ -84,7 +84,7 @@ projects.forEach(project => {
 		let configPath = project.projectDir + "/.rbxrefreshrc";
 		if (fs.existsSync(configPath)) {
 			config = JSON.parse(fs.readFileSync(configPath, "utf8"));
-		} else if (program.sync) {
+		} else if (commander.sync) {
 			// create .rbxrefreshrc?
 		}
 	} catch (e) {}
@@ -295,7 +295,7 @@ function onRequest(req: http.IncomingMessage, res: http.ServerResponse) {
 					break;
 				}
 				res.write(code + "\n", () => {
-					if (program.fullupdateonly) {
+					if (commander.fullupdateonly) {
 						if (codeQueue.length === 0) {
 							process.exit();
 						}
@@ -313,7 +313,7 @@ http.get("http://localhost:8888?id=" + sessionId).on("error", _ => {});
 
 setTimeout(() => {
 	http.createServer(onRequest).listen(8888, "0.0.0.0");
-	if (program.sync) {
+	if (commander.sync) {
 		console.log("Syncing..");
 		sendSource(SRC_SYNC_TO_FS_LUA);
 	}
@@ -324,7 +324,7 @@ setTimeout(() => {
 		requestSendFullUpdate(project.sourceDir);
 	});
 
-	if (program.fullupdateonly) {
+	if (commander.fullupdateonly) {
 		return;
 	}
 

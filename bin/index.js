@@ -3,6 +3,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const chokidar = require("chokidar");
 const colors = require("colors");
+const commander = require("commander");
 const fs = require("fs");
 const http = require("http");
 const path = require("path");
@@ -22,7 +23,7 @@ class Project {
         }
         this.sourceDir = projectDir.replace(/\/+$/, "") + "/src";
         if (!fs.existsSync(this.sourceDir)) {
-            if (program.sync) {
+            if (commander.sync) {
                 fs.mkdirSync(this.sourceDir);
             }
             else {
@@ -41,8 +42,7 @@ class Project {
 }
 let projects = [];
 let pkgjson = require("./../package.json");
-const program = require("commander");
-program
+commander
     .version(pkgjson.version)
     .usage("rbxrefresh [options] [dir]")
     .arguments("[dir...]")
@@ -58,7 +58,7 @@ program
     }
 })
     .parse(process.argv);
-let doPlaceIdGuard = false;
+let doPlaceIdGuard = true;
 let placeIdSet = new Set();
 projects.forEach(project => {
     let config = {};
@@ -67,7 +67,7 @@ projects.forEach(project => {
         if (fs.existsSync(configPath)) {
             config = JSON.parse(fs.readFileSync(configPath, "utf8"));
         }
-        else if (program.sync) {
+        else if (commander.sync) {
             // create .rbxrefreshrc?
         }
     }
@@ -75,7 +75,6 @@ projects.forEach(project => {
     let placeIdData = config.placeId;
     if (typeof placeIdData === "number") {
         placeIdSet.add(placeIdData);
-        doPlaceIdGuard = true;
     }
     else if (typeof placeIdData === "string") {
         let id = parseInt(placeIdData);
@@ -85,7 +84,6 @@ projects.forEach(project => {
         else {
             throw new Error("Invalid data type!");
         }
-        doPlaceIdGuard = true;
     }
     else if (typeof placeIdData === "object") {
         // array
@@ -103,9 +101,9 @@ projects.forEach(project => {
                 }
             }
         }
-        doPlaceIdGuard = true;
     }
     else {
+        doPlaceIdGuard = false;
         // this should probably be more specific
         console.error("Bad placeId type in .rbxrefreshrc!");
         process.exit();
@@ -120,7 +118,7 @@ function generateUpdateAllFilesCodeRbxTraversal(sourceDir, dir, outCodeLines) {
         }
         else {
             let fileExt = path.extname(itrFilePath);
-            if (fileExt == Utility_1.FSEXT_LUA || fileExt == Utility_1.FSEXT_MOON) {
+            if (fileExt === Utility_1.FSEXT_LUA || fileExt === Utility_1.FSEXT_MOON) {
                 outCodeLines.push(generateUpdateFileCode(sourceDir, itrFilePath));
             }
         }
@@ -130,11 +128,11 @@ function getAssetRbxInfoFromFilePath(sourceDir, filePath) {
     let assetFullName = path.basename(filePath, path.extname(filePath));
     let assetRbxName = "";
     let assetType = path.extname(assetFullName).replace(".", "");
-    if (assetType == "") {
-        if (filePath.indexOf("ServerScriptService") != -1) {
+    if (assetType === "") {
+        if (filePath.indexOf("ServerScriptService") !== -1) {
             assetType = Utility_1.RBXTYPE_SCRIPT;
         }
-        else if (filePath.indexOf("StarterPlayer") != -1) {
+        else if (filePath.indexOf("StarterPlayer") !== -1) {
             assetType = Utility_1.RBXTYPE_LOCALSCRIPT;
         }
         else {
@@ -156,15 +154,15 @@ function getAssetRbxInfoFromFilePath(sourceDir, filePath) {
 }
 function generateUpdateFileCode(sourceDir, filePath) {
     let fileExt = path.extname(filePath);
-    if (fileExt != Utility_1.FSEXT_LUA && fileExt != Utility_1.FSEXT_MOON) {
+    if (fileExt !== Utility_1.FSEXT_LUA && fileExt !== Utility_1.FSEXT_MOON) {
         return "";
     }
     let assetInfo = getAssetRbxInfoFromFilePath(sourceDir, filePath);
     let fileContents = "";
-    if (fileExt == Utility_1.FSEXT_LUA) {
+    if (fileExt === Utility_1.FSEXT_LUA) {
         fileContents = fs.readFileSync(filePath).toString();
     }
-    else if (fileExt == Utility_1.FSEXT_MOON) {
+    else if (fileExt === Utility_1.FSEXT_MOON) {
         fileContents = child_process_1.spawnSync("moonc -p " + filePath, {
             shell: true
         }).stdout.toString();
@@ -229,7 +227,7 @@ function sendSource(...codeArray) {
 let syncFsJson = "";
 let sessionId = uuid();
 function onRequest(req, res) {
-    if (req.method == "POST") {
+    if (req.method === "POST") {
         let buffer = "";
         req.on("data", (data) => {
             buffer += data.toString();
@@ -237,7 +235,7 @@ function onRequest(req, res) {
         req.on("end", () => {
             res.writeHead(200, { "Content-Type": "application/json" });
             res.end();
-            if (buffer == "$$END$$") {
+            if (buffer === "$$END$$") {
                 SyncFS_1.syncSourceDirFromObj(projects[0].sourceDir, JSON.parse(syncFsJson.toString()));
             }
             else {
@@ -246,8 +244,8 @@ function onRequest(req, res) {
             }
         });
     }
-    else if (req.method == "GET") {
-        if (typeof req.url == "string") {
+    else if (req.method === "GET") {
+        if (typeof req.url === "string") {
             let args = url.parse(req.url, true).query;
             if (args.id && args.id !== sessionId) {
                 console.log("Killed by new RbxRefresh");
@@ -259,11 +257,12 @@ function onRequest(req, res) {
             res.writeHead(200, { "Content-Type": "application/json" });
             while (codeQueue.length > 0) {
                 let code = codeQueue.shift();
-                if (!code)
+                if (!code) {
                     break;
+                }
                 res.write(code + "\n", () => {
-                    if (program.fullupdateonly) {
-                        if (codeQueue.length == 0) {
+                    if (commander.fullupdateonly) {
+                        if (codeQueue.length === 0) {
                             process.exit();
                         }
                     }
@@ -279,7 +278,7 @@ function onRequest(req, res) {
 http.get("http://localhost:8888?id=" + sessionId).on("error", _ => { });
 setTimeout(() => {
     http.createServer(onRequest).listen(8888, "0.0.0.0");
-    if (program.sync) {
+    if (commander.sync) {
         console.log("Syncing..");
         sendSource(Utility_1.SRC_SYNC_TO_FS_LUA);
     }
@@ -288,8 +287,9 @@ setTimeout(() => {
         console.log("\t", path.resolve(project.projectDir));
         requestSendFullUpdate(project.sourceDir);
     });
-    if (program.fullupdateonly)
+    if (commander.fullupdateonly) {
         return;
+    }
     projects.forEach(project => {
         let srcPath = path.resolve(project.sourceDir);
         chokidar

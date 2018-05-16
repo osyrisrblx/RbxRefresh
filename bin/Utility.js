@@ -11,14 +11,12 @@ exports.RBXTYPE_SCRIPT_ALIASES = ["Script", "server", ""];
 exports.FSEXT_LUA = ".lua";
 exports.FSEXT_MOON = ".moon";
 function isScript(type) {
-    return type == exports.RBXTYPE_MODULESCRIPT ||
-        type == exports.RBXTYPE_LOCALSCRIPT ||
-        type == exports.RBXTYPE_SCRIPT;
+    return type === exports.RBXTYPE_MODULESCRIPT || type === exports.RBXTYPE_LOCALSCRIPT || type === exports.RBXTYPE_SCRIPT;
 }
 exports.isScript = isScript;
 function isAliasOf(str, aliases) {
     for (var i = 0; i < aliases.length; i++) {
-        if (aliases[i].toLowerCase() == str.toLowerCase()) {
+        if (aliases[i].toLowerCase() === str.toLowerCase()) {
             return true;
         }
     }
@@ -26,14 +24,18 @@ function isAliasOf(str, aliases) {
 }
 exports.isAliasOf = isAliasOf;
 function jsArrayToLuaArrayString(jsarray) {
-    return "{" + jsarray.map(x => {
-        if (typeof x == "number") {
-            return x;
-        }
-        else if (typeof x == "string") {
-            return "\"" + x + "\"";
-        }
-    }).join(", ") + "}";
+    return ("{" +
+        jsarray
+            .map(x => {
+            if (typeof x === "number") {
+                return x;
+            }
+            else if (typeof x === "string") {
+                return '"' + x + '"';
+            }
+        })
+            .join(", ") +
+        "}");
 }
 exports.jsArrayToLuaArrayString = jsArrayToLuaArrayString;
 function matchAssetRbxType(str) {

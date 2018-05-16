@@ -13,14 +13,12 @@ export const FSEXT_LUA = ".lua";
 export const FSEXT_MOON = ".moon";
 
 export function isScript(type: string): boolean {
-	return type == RBXTYPE_MODULESCRIPT ||
-		type == RBXTYPE_LOCALSCRIPT ||
-		type == RBXTYPE_SCRIPT;
+	return type === RBXTYPE_MODULESCRIPT || type === RBXTYPE_LOCALSCRIPT || type === RBXTYPE_SCRIPT;
 }
 
 export function isAliasOf(str: string, aliases: string[]): boolean {
 	for (var i = 0; i < aliases.length; i++) {
-		if (aliases[i].toLowerCase() == str.toLowerCase()) {
+		if (aliases[i].toLowerCase() === str.toLowerCase()) {
 			return true;
 		}
 	}
@@ -28,13 +26,19 @@ export function isAliasOf(str: string, aliases: string[]): boolean {
 }
 
 export function jsArrayToLuaArrayString(jsarray: any[]): string {
-	return "{" + jsarray.map(x => {
-		if (typeof x == "number") {
-			return x;
-		} else if (typeof x == "string") {
-			return "\"" + x + "\"";
-		}
-	}).join(", ") + "}";
+	return (
+		"{" +
+		jsarray
+			.map(x => {
+				if (typeof x === "number") {
+					return x;
+				} else if (typeof x === "string") {
+					return '"' + x + '"';
+				}
+			})
+			.join(", ") +
+		"}"
+	);
 }
 
 export function matchAssetRbxType(str: string): string {

@@ -1,10 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 
-import {
-	FSEXT_LUA,
-	isScript,
-} from "./Utility";
+import { FSEXT_LUA, isScript } from "./Utility";
 
 function pathGetStat(path: string): fs.Stats | null {
 	try {
@@ -16,7 +13,7 @@ function pathGetStat(path: string): fs.Stats | null {
 
 function mkdir(path: string): void {
 	console.log("Create[DIR]:", path);
-	if (pathGetStat(path) == null) {
+	if (pathGetStat(path) === null) {
 		fs.mkdirSync(path);
 	}
 }
@@ -29,7 +26,7 @@ function objRbxTraversal(objPath: string, obj: RbxObject): void {
 			childPath = childPath + "." + child.type + FSEXT_LUA;
 			console.log("Create[FILE]:", childPath);
 
-			if (pathGetStat(childPath) != null) {
+			if (pathGetStat(childPath) !== null) {
 				fs.unlinkSync(childPath);
 			}
 			fs.writeFileSync(childPath, child.source);
