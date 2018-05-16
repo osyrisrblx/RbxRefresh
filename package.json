@@ -1,12 +1,14 @@
 {
 	"name": "rbxrefresh",
-	"version": "3.0.4",
+	"version": "4.0.0",
 	"description": "Syncs a local file structure to ROBLOX Studio.",
 	"main": "./bin/index.js",
 	"dependencies": {
+		"@types/uuid": "^3.4.3",
 		"chokidar": "^1.7.0",
+		"colors": "^1.1.2",
 		"commander": "^2.9.0",
-		"colors": "^1.1.2"
+		"uuid": "^3.2.1"
 	},
 	"devDependencies": {
 		"@types/chokidar": "^1.7.4",

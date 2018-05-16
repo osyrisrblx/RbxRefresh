@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var fs = require("fs");
-var path = require("path");
-var Utility_1 = require("./Utility");
+const fs = require("fs");
+const path = require("path");
+const Utility_1 = require("./Utility");
 function pathGetStat(path) {
     try {
         return fs.statSync(path);

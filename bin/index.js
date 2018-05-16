@@ -1,111 +1,135 @@
 #!/usr/bin/env node
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var chokidar = require("chokidar");
-var colors = require("colors");
-var fs = require("fs");
-var http = require("http");
-var path = require("path");
-var url = require("url");
-var util = require("util");
-var child_process_1 = require("child_process");
-var SyncFS_1 = require("./SyncFS");
-var Utility_1 = require("./Utility");
-var jsLog = console.log;
-console.log = function () {
-    var args = [];
-    for (var _i = 0; _i < arguments.length; _i++) {
-        args[_i] = arguments[_i];
+const chokidar = require("chokidar");
+const colors = require("colors");
+const fs = require("fs");
+const http = require("http");
+const path = require("path");
+const url = require("url");
+const util = require("util");
+const uuid = require("uuid/v1");
+const child_process_1 = require("child_process");
+const SyncFS_1 = require("./SyncFS");
+const Utility_1 = require("./Utility");
+let jsLog = console.log;
+console.log = (...args) => jsLog(colors.red(colors.bold("[RbxRefresh]")), ...args);
+class Project {
+    constructor(projectDir) {
+        this.projectDir = projectDir;
+        if (!fs.existsSync(projectDir)) {
+            throw new Error("Could not find project directory!");
+        }
+        this.sourceDir = projectDir.replace(/\/+$/, "") + "/src";
+        if (!fs.existsSync(this.sourceDir)) {
+            if (program.sync) {
+                fs.mkdirSync(this.sourceDir);
+            }
+            else {
+                // let's try old behavior?
+                this.sourceDir = this.projectDir;
+                this.projectDir = this.sourceDir + "/../";
+                if (!fs.existsSync(this.projectDir)) {
+                    throw new Error("Could not find project directory!");
+                }
+                if (!fs.existsSync(this.sourceDir)) {
+                    throw new Error("Could not find src directory!");
+                }
+            }
+        }
     }
-    return jsLog.apply(void 0, [colors.red(colors.bold("[RbxRefresh]"))].concat(args));
-};
-var PROJECT_DIR = ".";
-var pkgjson = require("./../package.json");
-var program = require("commander");
+}
+let projects = [];
+let pkgjson = require("./../package.json");
+const program = require("commander");
 program
     .version(pkgjson.version)
     .usage("rbxrefresh [options] [dir]")
-    .arguments("[dir]")
+    .arguments("[dir...]")
     .option("-s, --sync", "Enables sync to filesystem")
     .option("-f, --fullupdateonly", "Terminates server after full update")
     .option("-p, --poll", "Makes Chokidar use polling mode")
-    .action(function (env) {
-    if (env) {
-        PROJECT_DIR = env;
+    .action((dirs) => {
+    if (dirs) {
+        dirs.forEach(dir => projects.push(new Project(dir)));
+    }
+    else {
+        projects.push(new Project("."));
     }
 })
     .parse(process.argv);
-if (!fs.existsSync(PROJECT_DIR)) {
-    throw new Error("Could not find project directory!");
-}
-var SOURCE_DIR = PROJECT_DIR + "/src";
-if (!fs.existsSync(SOURCE_DIR)) {
-    if (program.sync) {
-        fs.mkdirSync(SOURCE_DIR);
-    }
-    else {
-        // let's try old behavior?
-        SOURCE_DIR = PROJECT_DIR;
-        PROJECT_DIR = SOURCE_DIR + "/../";
-        if (!fs.existsSync(PROJECT_DIR)) {
-            throw new Error("Could not find project directory!");
+let doPlaceIdGuard = false;
+let placeIdSet = new Set();
+projects.forEach(project => {
+    let config = {};
+    try {
+        let configPath = project.projectDir + "/.rbxrefreshrc";
+        if (fs.existsSync(configPath)) {
+            config = JSON.parse(fs.readFileSync(configPath, "utf8"));
         }
-        if (!fs.existsSync(SOURCE_DIR)) {
-            throw new Error("Could not find src directory!");
+        else if (program.sync) {
+            // create .rbxrefreshrc?
         }
     }
-}
-var config = {};
-try {
-    if (fs.existsSync(PROJECT_DIR + "/.rbxrefreshrc")) {
-        config = JSON.parse(fs.readFileSync(PROJECT_DIR + "/.rbxrefreshrc", "utf8"));
+    catch (e) { }
+    let placeIdData = config.placeId;
+    if (typeof placeIdData === "number") {
+        placeIdSet.add(placeIdData);
+        doPlaceIdGuard = true;
     }
-    else if (program.sync) {
-        // create .rbxrefreshrc
-    }
-}
-catch (e) { }
-var doPlaceIdGuard = true;
-var placeIdJsArray = [];
-if (typeof config.placeId == "number") {
-    placeIdJsArray.push(config.placeId);
-}
-else if (typeof config.placeId == "object") {
-    // array
-    placeIdJsArray = config.placeId;
-}
-else if (typeof config.placeId == "undefined") {
-    // placeId either didn't exist or wasn't an expected type
-    doPlaceIdGuard = false;
-}
-else {
-    console.error("Bad placeId type in .rbxrefreshrc!");
-    process.exit();
-}
-var placeIdLuaArray = Utility_1.jsArrayToLuaArrayString(placeIdJsArray);
-function generateUpdateAllFilesCodeRbxTraversal(dir, outCodeLines) {
-    fs.readdirSync(dir).forEach(function (itrFileName) {
-        var itrFilePath = path.resolve(dir, itrFileName);
-        if (fs.statSync(itrFilePath).isDirectory()) {
-            generateUpdateAllFilesCodeRbxTraversal(itrFilePath, outCodeLines);
+    else if (typeof placeIdData === "string") {
+        let id = parseInt(placeIdData);
+        if (!isNaN(id)) {
+            placeIdSet.add(id);
         }
         else {
-            var fileExt = path.extname(itrFilePath);
+            throw new Error("Invalid data type!");
+        }
+        doPlaceIdGuard = true;
+    }
+    else if (typeof placeIdData === "object") {
+        // array
+        for (let id of placeIdData) {
+            if (typeof id === "number") {
+                placeIdSet.add(id);
+            }
+            else if (typeof id === "string") {
+                let idNum = parseInt(id);
+                if (!isNaN(idNum)) {
+                    placeIdSet.add(idNum);
+                }
+                else {
+                    throw new Error("Invalid data type!");
+                }
+            }
+        }
+        doPlaceIdGuard = true;
+    }
+    else {
+        // this should probably be more specific
+        console.error("Bad placeId type in .rbxrefreshrc!");
+        process.exit();
+    }
+});
+let placeIdLuaArray = Utility_1.jsArrayToLuaArrayString(Array.from(placeIdSet));
+function generateUpdateAllFilesCodeRbxTraversal(sourceDir, dir, outCodeLines) {
+    fs.readdirSync(dir).forEach(itrFileName => {
+        let itrFilePath = path.resolve(dir, itrFileName);
+        if (fs.statSync(itrFilePath).isDirectory()) {
+            generateUpdateAllFilesCodeRbxTraversal(sourceDir, itrFilePath, outCodeLines);
+        }
+        else {
+            let fileExt = path.extname(itrFilePath);
             if (fileExt == Utility_1.FSEXT_LUA || fileExt == Utility_1.FSEXT_MOON) {
-                outCodeLines.push(generateUpdateFileCode(itrFilePath));
+                outCodeLines.push(generateUpdateFileCode(sourceDir, itrFilePath));
             }
         }
     });
 }
-function generateUpdateAllFilesCodeLines(dir) {
-    var outCodeLines = [];
-    generateUpdateAllFilesCodeRbxTraversal(dir, outCodeLines);
-    return outCodeLines;
-}
-function getAssetRbxInfoFromFilePath(filePath) {
-    var assetFullName = path.basename(filePath, path.extname(filePath));
-    var assetRbxName = "";
-    var assetType = path.extname(assetFullName).replace(".", "");
+function getAssetRbxInfoFromFilePath(sourceDir, filePath) {
+    let assetFullName = path.basename(filePath, path.extname(filePath));
+    let assetRbxName = "";
+    let assetType = path.extname(assetFullName).replace(".", "");
     if (assetType == "") {
         if (filePath.indexOf("ServerScriptService") != -1) {
             assetType = Utility_1.RBXTYPE_SCRIPT;
@@ -122,7 +146,7 @@ function getAssetRbxInfoFromFilePath(filePath) {
         assetRbxName = path.basename(assetFullName, "." + assetType);
         assetType = Utility_1.matchAssetRbxType(assetType);
     }
-    var relativeFilePathArray = path.relative(SOURCE_DIR, filePath).split(path.sep);
+    let relativeFilePathArray = path.relative(sourceDir, filePath).split(path.sep);
     relativeFilePathArray.pop();
     return {
         name: assetRbxName,
@@ -130,13 +154,13 @@ function getAssetRbxInfoFromFilePath(filePath) {
         path: relativeFilePathArray
     };
 }
-function generateUpdateFileCode(filePath) {
-    var fileExt = path.extname(filePath);
+function generateUpdateFileCode(sourceDir, filePath) {
+    let fileExt = path.extname(filePath);
     if (fileExt != Utility_1.FSEXT_LUA && fileExt != Utility_1.FSEXT_MOON) {
         return "";
     }
-    var assetInfo = getAssetRbxInfoFromFilePath(filePath);
-    var fileContents = "";
+    let assetInfo = getAssetRbxInfoFromFilePath(sourceDir, filePath);
+    let fileContents = "";
     if (fileExt == Utility_1.FSEXT_LUA) {
         fileContents = fs.readFileSync(filePath).toString();
     }
@@ -150,138 +174,135 @@ function generateUpdateFileCode(filePath) {
     }
     return util.format(Utility_1.SRC_SET_SOURCE_CALL_LUA, assetInfo.name, assetInfo.type, Utility_1.jsArrayToLuaArrayString(assetInfo.path), fileContents);
 }
-function requestSendAddFilePath(filePath, attempt) {
-    if (attempt === void 0) { attempt = 1; }
-    var code = generateUpdateFileCode(filePath);
+function requestSendAddFilePath(sourceDir, filePath, attempt = 1) {
+    let code = generateUpdateFileCode(sourceDir, filePath);
     if (code.length === 0) {
         console.log("File empty!");
         if (attempt < 5) {
             console.log("Retrying..");
-            setTimeout(requestSendAddFilePath, 100, filePath, attempt + 1);
+            setTimeout(requestSendAddFilePath, 100, sourceDir, filePath, attempt + 1);
             return;
         }
     }
-    var assetInfo = getAssetRbxInfoFromFilePath(filePath);
-    var debugOutput = util.format("setSource(%s, %s, [%s])", assetInfo.name, assetInfo.type, assetInfo.path.join(", "));
+    let assetInfo = getAssetRbxInfoFromFilePath(sourceDir, filePath);
+    let debugOutput = util.format("setSource(%s, %s, [%s])", assetInfo.name, assetInfo.type, assetInfo.path.join(", "));
     console.log(debugOutput);
-    sendSource([
-        util.format(Utility_1.SRC_PRINT_LUA, debugOutput),
-        Utility_1.SRC_UTILITY_FUNC_LUA,
-        code,
-        util.format(Utility_1.SRC_PRINT_LUA, "Completed")
-    ]);
+    sendSource(util.format(Utility_1.SRC_PRINT_LUA, debugOutput), Utility_1.SRC_UTILITY_FUNC_LUA, code);
 }
-function requestSendRemoveFilePath(filePath) {
-    var assetInfo = getAssetRbxInfoFromFilePath(filePath);
-    var debugOutput = util.format("removeFile(%s, %s, [%s])", assetInfo.name, assetInfo.type, assetInfo.path.join(", "));
-    var code = util.format(Utility_1.SRC_REMOVE_FILE_CALL_LUA, assetInfo.name, assetInfo.type, Utility_1.jsArrayToLuaArrayString(assetInfo.path));
+function requestSendRemoveFilePath(sourceDir, filePath) {
+    let assetInfo = getAssetRbxInfoFromFilePath(sourceDir, filePath);
+    let debugOutput = util.format("removeFile(%s, %s, [%s])", assetInfo.name, assetInfo.type, assetInfo.path.join(", "));
+    let code = util.format(Utility_1.SRC_REMOVE_FILE_CALL_LUA, assetInfo.name, assetInfo.type, Utility_1.jsArrayToLuaArrayString(assetInfo.path));
     console.log(debugOutput);
-    sendSource([
-        util.format(Utility_1.SRC_PRINT_LUA, debugOutput),
-        Utility_1.SRC_UTILITY_FUNC_LUA,
-        code,
-        util.format(Utility_1.SRC_PRINT_LUA, "Completed")
-    ]);
+    sendSource(util.format(Utility_1.SRC_PRINT_LUA, debugOutput), Utility_1.SRC_UTILITY_FUNC_LUA, code);
 }
 function requestSendFullUpdate(dir) {
-    var code = generateUpdateAllFilesCodeLines(dir).join("\n");
-    var debugOutput = util.format("fullUpdate()");
-    console.log(debugOutput);
-    sendSource([
-        util.format(Utility_1.SRC_PRINT_LUA, debugOutput),
-        Utility_1.SRC_UTILITY_FUNC_LUA,
-        code,
-        util.format(Utility_1.SRC_PRINT_LUA, "Completed")
-    ]);
+    let codeLines = [];
+    generateUpdateAllFilesCodeRbxTraversal(dir, dir, codeLines);
+    let code = codeLines.join("\n");
+    sendSource(util.format(Utility_1.SRC_PRINT_LUA, "fullUpdate() [ " + dir + " ]"), Utility_1.SRC_UTILITY_FUNC_LUA, code);
 }
-var responseQueue = [];
-var codeQueue = [];
-function writeCodeToRequest(code, response) {
-    if (!code || !response)
-        return;
-    response.writeHead(200, { "Content-Type": "application/json" });
-    response.end(code, function () {
-        if (program.fullupdateonly) {
-            if (codeQueue.length == 0) {
-                process.exit();
-            }
-        }
-    });
-}
-function sendSource(codeArray) {
+let responseQueue = [];
+let codeQueue = [];
+function sendSource(...codeArray) {
     if (doPlaceIdGuard) {
         codeArray.unshift(util.format(Utility_1.SRC_GUARD_LUA, placeIdLuaArray));
     }
-    var code = codeArray.join("\n");
+    let code = codeArray.join("\n");
+    codeQueue.push(code);
     if (responseQueue.length > 0) {
+        let bin = [];
         while (responseQueue.length > 0) {
-            writeCodeToRequest(code, responseQueue.shift());
+            let res = responseQueue.shift();
+            if (res) {
+                bin.push(res);
+            }
         }
-    }
-    else {
-        codeQueue.push(code);
+        bin.forEach(res => res.writeHead(200, { "Content-Type": "application/json" }));
+        while (codeQueue.length > 0) {
+            let code = codeQueue.shift();
+            bin.forEach(res => res.write(code + "\n"));
+        }
+        bin.forEach(res => res.end());
     }
 }
-var syncFsJson = "";
+let syncFsJson = "";
+let sessionId = uuid();
 function onRequest(req, res) {
     if (req.method == "POST") {
-        var buffer_1 = "";
-        req.on("data", function (data) {
-            buffer_1 += data.toString();
+        let buffer = "";
+        req.on("data", (data) => {
+            buffer += data.toString();
         });
-        req.on("end", function () {
+        req.on("end", () => {
             res.writeHead(200, { "Content-Type": "application/json" });
             res.end();
-            if (buffer_1 == "$$END$$") {
-                SyncFS_1.syncSourceDirFromObj(SOURCE_DIR, JSON.parse(syncFsJson.toString()));
+            if (buffer == "$$END$$") {
+                SyncFS_1.syncSourceDirFromObj(projects[0].sourceDir, JSON.parse(syncFsJson.toString()));
             }
             else {
-                console.log("SyncToFS Load bytes:", buffer_1.length);
-                syncFsJson += buffer_1;
+                console.log("SyncToFS Load bytes:", buffer.length);
+                syncFsJson += buffer;
             }
         });
     }
-    else {
+    else if (req.method == "GET") {
         if (typeof req.url == "string") {
-            var args = url.parse(req.url, true).query;
-            if (args.kill == "true") {
+            let args = url.parse(req.url, true).query;
+            if (args.id && args.id !== sessionId) {
+                console.log("Killed by new RbxRefresh");
                 process.exit();
                 return;
             }
         }
         if (codeQueue.length > 0) {
+            res.writeHead(200, { "Content-Type": "application/json" });
             while (codeQueue.length > 0) {
-                writeCodeToRequest(codeQueue.shift(), res);
+                let code = codeQueue.shift();
+                if (!code)
+                    break;
+                res.write(code + "\n", () => {
+                    if (program.fullupdateonly) {
+                        if (codeQueue.length == 0) {
+                            process.exit();
+                        }
+                    }
+                });
             }
+            res.end();
         }
         else {
             responseQueue.push(res);
         }
     }
 }
-http.get("http://localhost:8888?kill=true").on("error", function (e) { });
-setTimeout(function () {
+http.get("http://localhost:8888?id=" + sessionId).on("error", _ => { });
+setTimeout(() => {
     http.createServer(onRequest).listen(8888, "0.0.0.0");
     if (program.sync) {
         console.log("Syncing..");
-        sendSource([Utility_1.SRC_SYNC_TO_FS_LUA]);
+        sendSource(Utility_1.SRC_SYNC_TO_FS_LUA);
     }
-    console.log(util.format("[%s] Running on PROJECT_DIR(%s)", pkgjson.version, path.resolve(PROJECT_DIR)));
-    requestSendFullUpdate(SOURCE_DIR);
+    console.log(util.format("RbxRefresh v%s running on:", pkgjson.version));
+    projects.forEach(project => {
+        console.log("\t", path.resolve(project.projectDir));
+        requestSendFullUpdate(project.sourceDir);
+    });
     if (program.fullupdateonly)
         return;
-    chokidar
-        .watch(SOURCE_DIR, {
-        ignored: /(^|[\/\\])\.(?![$\/\\])/,
-        persistent: true,
-        ignoreInitial: true,
-        usePolling: program.poll ? true : false
-    })
-        .on("change", function (path) { return requestSendAddFilePath(path); })
-        .on("add", function (path) { return requestSendAddFilePath(path); })
-        .on("unlink", function (path) {
-        requestSendRemoveFilePath(path);
-        requestSendFullUpdate(SOURCE_DIR);
+    projects.forEach(project => {
+        let srcPath = path.resolve(project.sourceDir);
+        chokidar
+            .watch(srcPath, {
+            ignored: /(^|[\/\\])\../,
+            ignoreInitial: true
+        })
+            .on("change", (path) => requestSendAddFilePath(srcPath, path))
+            .on("add", (path) => requestSendAddFilePath(srcPath, path))
+            .on("unlink", (path) => {
+            requestSendRemoveFilePath(srcPath, path);
+            requestSendFullUpdate(srcPath);
+        });
     });
 }, 1000);
 //# sourceMappingURL=index.js.map

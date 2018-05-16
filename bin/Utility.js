@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var fs = require("fs");
-var path = require("path");
+const fs = require("fs");
+const path = require("path");
 exports.RBXTYPE_MODULESCRIPT = "ModuleScript";
 exports.RBXTYPE_LOCALSCRIPT = "LocalScript";
 exports.RBXTYPE_SCRIPT = "Script";
@@ -26,7 +26,7 @@ function isAliasOf(str, aliases) {
 }
 exports.isAliasOf = isAliasOf;
 function jsArrayToLuaArrayString(jsarray) {
-    return "{" + jsarray.map(function (x) {
+    return "{" + jsarray.map(x => {
         if (typeof x == "number") {
             return x;
         }

@@ -1,5 +1,5 @@
 interface RbxRefreshConfig {
-	placeId?: number | number[];
+	placeId?: number | string | number[] | string[];
 }
 
 interface RbxObject {
