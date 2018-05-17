@@ -75,7 +75,7 @@ commander
 	})
 	.parse(process.argv);
 
-let doPlaceIdGuard = true;
+let doPlaceIdGuard = false;
 let placeIdSet = new Set<number>();
 
 projects.forEach(project => {
@@ -88,13 +88,14 @@ projects.forEach(project => {
 			// create .rbxrefreshrc?
 		}
 	} catch (e) {}
+	let localSet = new Set<number>();
 	let placeIdData = config.placeId;
 	if (typeof placeIdData === "number") {
-		placeIdSet.add(placeIdData);
+		localSet.add(placeIdData);
 	} else if (typeof placeIdData === "string") {
 		let id = parseInt(placeIdData);
 		if (!isNaN(id)) {
-			placeIdSet.add(id);
+			localSet.add(id);
 		} else {
 			throw new Error("Invalid data type!");
 		}
@@ -102,24 +103,34 @@ projects.forEach(project => {
 		// array
 		for (let id of placeIdData) {
 			if (typeof id === "number") {
-				placeIdSet.add(id);
+				localSet.add(id);
 			} else if (typeof id === "string") {
 				let idNum = parseInt(id);
 				if (!isNaN(idNum)) {
-					placeIdSet.add(idNum);
+					localSet.add(idNum);
 				} else {
 					throw new Error("Invalid data type!");
 				}
 			}
 		}
 	} else {
-		doPlaceIdGuard = false;
 		// this should probably be more specific
 		console.error("Bad placeId type in .rbxrefreshrc!");
 		process.exit();
 	}
+
+	// grab the intersection of the two sets
+	if (localSet.size > 0) {
+		doPlaceIdGuard = true;
+		if (placeIdSet.size > 0) {
+			placeIdSet = new Set([...localSet].filter(x => placeIdSet.has(x)));
+		} else {
+			placeIdSet = localSet;
+		}
+	}
 });
 let placeIdLuaArray = jsArrayToLuaArrayString(Array.from(placeIdSet));
+console.log("placeIdLuaArray", placeIdLuaArray);
 
 function generateUpdateAllFilesCodeRbxTraversal(sourceDir: string, dir: string, outCodeLines: string[]) {
 	fs.readdirSync(dir).forEach(itrFileName => {

@@ -58,7 +58,7 @@ commander
     }
 })
     .parse(process.argv);
-let doPlaceIdGuard = true;
+let doPlaceIdGuard = false;
 let placeIdSet = new Set();
 projects.forEach(project => {
     let config = {};
@@ -72,14 +72,15 @@ projects.forEach(project => {
         }
     }
     catch (e) { }
+    let localSet = new Set();
     let placeIdData = config.placeId;
     if (typeof placeIdData === "number") {
-        placeIdSet.add(placeIdData);
+        localSet.add(placeIdData);
     }
     else if (typeof placeIdData === "string") {
         let id = parseInt(placeIdData);
         if (!isNaN(id)) {
-            placeIdSet.add(id);
+            localSet.add(id);
         }
         else {
             throw new Error("Invalid data type!");
@@ -89,12 +90,12 @@ projects.forEach(project => {
         // array
         for (let id of placeIdData) {
             if (typeof id === "number") {
-                placeIdSet.add(id);
+                localSet.add(id);
             }
             else if (typeof id === "string") {
                 let idNum = parseInt(id);
                 if (!isNaN(idNum)) {
-                    placeIdSet.add(idNum);
+                    localSet.add(idNum);
                 }
                 else {
                     throw new Error("Invalid data type!");
@@ -103,13 +104,23 @@ projects.forEach(project => {
         }
     }
     else {
-        doPlaceIdGuard = false;
         // this should probably be more specific
         console.error("Bad placeId type in .rbxrefreshrc!");
         process.exit();
     }
+    // grab the intersection of the two sets
+    if (localSet.size > 0) {
+        doPlaceIdGuard = true;
+        if (placeIdSet.size > 0) {
+            placeIdSet = new Set([...localSet].filter(x => placeIdSet.has(x)));
+        }
+        else {
+            placeIdSet = localSet;
+        }
+    }
 });
 let placeIdLuaArray = Utility_1.jsArrayToLuaArrayString(Array.from(placeIdSet));
+console.log("placeIdLuaArray", placeIdLuaArray);
 function generateUpdateAllFilesCodeRbxTraversal(sourceDir, dir, outCodeLines) {
     fs.readdirSync(dir).forEach(itrFileName => {
         let itrFilePath = path.resolve(dir, itrFileName);
