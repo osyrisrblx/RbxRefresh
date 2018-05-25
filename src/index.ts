@@ -130,7 +130,6 @@ projects.forEach(project => {
 	}
 });
 let placeIdLuaArray = jsArrayToLuaArrayString(Array.from(placeIdSet));
-console.log("placeIdLuaArray", placeIdLuaArray);
 
 function generateUpdateAllFilesCodeRbxTraversal(sourceDir: string, dir: string, outCodeLines: string[]) {
 	fs.readdirSync(dir).forEach(itrFileName => {
