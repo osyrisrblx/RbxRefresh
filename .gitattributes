@@ -1,1 +1,2 @@
 templates/* linguist-vendored
+*.ts linguist-language=TypeScript
