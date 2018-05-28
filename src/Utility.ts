@@ -26,19 +26,20 @@ export function isAliasOf(str: string, aliases: string[]): boolean {
 }
 
 export function jsArrayToLuaArrayString(jsarray: any[]): string {
-	return (
-		"{" +
-		jsarray
-			.map(x => {
-				if (typeof x === "number") {
-					return x;
-				} else if (typeof x === "string") {
-					return '"' + x + '"';
-				}
-			})
-			.join(", ") +
-		"}"
-	);
+	let bin = jsarray.map(x => {
+		if (typeof x === "number") {
+			return x;
+		} else if (typeof x === "string") {
+			return '"' + x + '"';
+		} else if (typeof x === "boolean") {
+			return x ? "true" : "false";
+		} else if (x === null || x === undefined) {
+			return "nil";
+		} else if (Array.isArray(x)) {
+			return jsArrayToLuaArrayString(x);
+		}
+	});
+	return "{" + bin.join(", ") + "}";
 }
 
 export function matchAssetRbxType(str: string): string {

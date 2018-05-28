@@ -1,13 +1,13 @@
 #!/usr/bin/env node
-import * as chokidar from "chokidar";
-import * as colors from "colors";
-import * as commander from "commander";
-import * as fs from "fs";
-import * as http from "http";
-import * as path from "path";
-import * as url from "url";
-import * as util from "util";
-import * as uuid from "uuid/v1";
+import chalk = require("chalk");
+import chokidar = require("chokidar");
+import commander = require("commander");
+import fs = require("fs");
+import http = require("http");
+import path = require("path");
+import url = require("url");
+import util = require("util");
+import uuid = require("uuid/v1");
 
 import { spawnSync } from "child_process";
 
@@ -25,11 +25,14 @@ import {
 	SRC_REMOVE_FILE_CALL_LUA,
 	SRC_SET_SOURCE_CALL_LUA,
 	SRC_SYNC_TO_FS_LUA,
-	SRC_UTILITY_FUNC_LUA
+	SRC_UTILITY_FUNC_LUA,
+	RBXTYPE_SCRIPT_ALIASES,
+	RBXTYPE_LOCALSCRIPT_ALIASES,
+	RBXTYPE_MODULESCRIPT_ALIASES
 } from "./Utility";
 
 let jsLog = console.log;
-console.log = (...args: any[]) => jsLog(colors.red(colors.bold("[RbxRefresh]")), ...args);
+console.log = (...args: any[]) => jsLog(chalk.default.red(chalk.default.bold("[RbxRefresh]")), ...args);
 
 class Project {
 	public sourceDir: string;
@@ -88,6 +91,8 @@ projects.forEach(project => {
 			// create .rbxrefreshrc?
 		}
 	} catch (e) {}
+
+	// evalutate placeId
 	let localSet = new Set<number>();
 	let placeIdData = config.placeId;
 	if (typeof placeIdData === "number") {
@@ -128,8 +133,23 @@ projects.forEach(project => {
 			placeIdSet = localSet;
 		}
 	}
+
+	// evalutate aliases
+	function overwriteArray<T>(oldArray: T[], newArray?: T[]) {
+		if (newArray) {
+			oldArray.splice(0, oldArray.length);
+			newArray.forEach(value => oldArray.push(value));
+		}
+	}
+	overwriteArray(RBXTYPE_SCRIPT_ALIASES, config.serverAliases);
+	overwriteArray(RBXTYPE_LOCALSCRIPT_ALIASES, config.clientAliases);
+	overwriteArray(RBXTYPE_MODULESCRIPT_ALIASES, config.moduleAliases);
 });
 let placeIdLuaArray = jsArrayToLuaArrayString(Array.from(placeIdSet));
+
+console.log("RBXTYPE_SCRIPT_ALIASES", RBXTYPE_SCRIPT_ALIASES);
+console.log("RBXTYPE_LOCALSCRIPT_ALIASES", RBXTYPE_LOCALSCRIPT_ALIASES);
+console.log("RBXTYPE_MODULESCRIPT_ALIASES", RBXTYPE_MODULESCRIPT_ALIASES);
 
 function generateUpdateAllFilesCodeRbxTraversal(sourceDir: string, dir: string, outCodeLines: string[]) {
 	fs.readdirSync(dir).forEach(itrFileName => {

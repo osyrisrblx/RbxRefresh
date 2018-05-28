@@ -1,5 +1,8 @@
 interface RbxRefreshConfig {
 	placeId?: number | string | number[] | string[];
+	serverAliases?: string[];
+	clientAliases?: string[];
+	moduleAliases?: string[];
 }
 
 interface RbxObject {
