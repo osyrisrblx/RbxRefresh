@@ -147,10 +147,6 @@ projects.forEach(project => {
 });
 let placeIdLuaArray = jsArrayToLuaArrayString(Array.from(placeIdSet));
 
-console.log("RBXTYPE_SCRIPT_ALIASES", RBXTYPE_SCRIPT_ALIASES);
-console.log("RBXTYPE_LOCALSCRIPT_ALIASES", RBXTYPE_LOCALSCRIPT_ALIASES);
-console.log("RBXTYPE_MODULESCRIPT_ALIASES", RBXTYPE_MODULESCRIPT_ALIASES);
-
 function generateUpdateAllFilesCodeRbxTraversal(sourceDir: string, dir: string, outCodeLines: string[]) {
 	fs.readdirSync(dir).forEach(itrFileName => {
 		let itrFilePath = path.resolve(dir, itrFileName);

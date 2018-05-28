@@ -1,6 +1,6 @@
 {
 	"name": "rbxrefresh",
-	"version": "4.2.0",
+	"version": "4.2.1",
 	"description": "Syncs a local file structure to ROBLOX Studio.",
 	"main": "./bin/index.js",
 	"dependencies": {
@@ -30,9 +30,7 @@
 		"type": "git",
 		"url": "git+https://github.com/osyrisrblx/RbxRefresh.git"
 	},
-	"keywords": [
-		"ROBLOX"
-	],
+	"keywords": ["ROBLOX"],
 	"author": "Osyris",
 	"license": "MIT",
 	"bugs": {

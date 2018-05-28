@@ -28,7 +28,7 @@ export function isAliasOf(str: string, aliases: string[]): boolean {
 export function jsArrayToLuaArrayString(jsarray: any[]): string {
 	let bin = jsarray.map(x => {
 		if (typeof x === "number") {
-			return x;
+			return x.toString();
 		} else if (typeof x === "string") {
 			return '"' + x + '"';
 		} else if (typeof x === "boolean") {
@@ -37,6 +37,8 @@ export function jsArrayToLuaArrayString(jsarray: any[]): string {
 			return "nil";
 		} else if (Array.isArray(x)) {
 			return jsArrayToLuaArrayString(x);
+		} else {
+			return "";
 		}
 	});
 	return "{" + bin.join(", ") + "}";
