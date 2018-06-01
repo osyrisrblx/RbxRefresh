@@ -17,9 +17,6 @@ import {
 	matchAssetRbxType,
 	FSEXT_LUA,
 	FSEXT_MOON,
-	RBXTYPE_LOCALSCRIPT,
-	RBXTYPE_MODULESCRIPT,
-	RBXTYPE_SCRIPT,
 	SRC_GUARD_LUA,
 	SRC_PRINT_LUA,
 	SRC_REMOVE_FILE_CALL_LUA,
@@ -163,29 +160,15 @@ function generateUpdateAllFilesCodeRbxTraversal(sourceDir: string, dir: string, 
 
 function getAssetRbxInfoFromFilePath(sourceDir: string, filePath: string): RbxInfo {
 	let assetFullName = path.basename(filePath, path.extname(filePath));
-	let assetRbxName = "";
 	let assetType = path.extname(assetFullName).replace(".", "");
-
-	if (assetType === "") {
-		if (filePath.indexOf("ServerScriptService") !== -1) {
-			assetType = RBXTYPE_SCRIPT;
-		} else if (filePath.indexOf("StarterPlayer") !== -1) {
-			assetType = RBXTYPE_LOCALSCRIPT;
-		} else {
-			assetType = RBXTYPE_MODULESCRIPT;
-		}
-		assetRbxName = assetFullName;
-	} else {
-		assetRbxName = path.basename(assetFullName, "." + assetType);
-		assetType = matchAssetRbxType(assetType);
-	}
+	let assetRbxName = path.basename(assetFullName, "." + assetType);
 
 	let relativeFilePathArray = path.relative(sourceDir, filePath).split(path.sep);
 	relativeFilePathArray.pop();
 
 	return {
 		name: assetRbxName,
-		type: assetType,
+		type: matchAssetRbxType(assetType),
 		path: relativeFilePathArray
 	};
 }
