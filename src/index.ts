@@ -92,33 +92,35 @@ projects.forEach(project => {
 	// evalutate placeId
 	let localSet = new Set<number>();
 	let placeIdData = config.placeId;
-	if (typeof placeIdData === "number") {
-		localSet.add(placeIdData);
-	} else if (typeof placeIdData === "string") {
-		let id = parseInt(placeIdData);
-		if (!isNaN(id)) {
-			localSet.add(id);
-		} else {
-			throw new Error("Invalid data type!");
-		}
-	} else if (typeof placeIdData === "object") {
-		// array
-		for (let id of placeIdData) {
-			if (typeof id === "number") {
+	if (placeIdData) {
+		if (typeof placeIdData === "number") {
+			localSet.add(placeIdData);
+		} else if (typeof placeIdData === "string") {
+			let id = parseInt(placeIdData);
+			if (!isNaN(id)) {
 				localSet.add(id);
-			} else if (typeof id === "string") {
-				let idNum = parseInt(id);
-				if (!isNaN(idNum)) {
-					localSet.add(idNum);
-				} else {
-					throw new Error("Invalid data type!");
+			} else {
+				throw new Error("Invalid data type!");
+			}
+		} else if (typeof placeIdData === "object") {
+			// array
+			for (let id of placeIdData) {
+				if (typeof id === "number") {
+					localSet.add(id);
+				} else if (typeof id === "string") {
+					let idNum = parseInt(id);
+					if (!isNaN(idNum)) {
+						localSet.add(idNum);
+					} else {
+						throw new Error("Invalid data type!");
+					}
 				}
 			}
+		} else {
+			// this should probably be more specific
+			console.error("Bad placeId type in .rbxrefreshrc!");
+			process.exit();
 		}
-	} else {
-		// this should probably be more specific
-		console.error("Bad placeId type in .rbxrefreshrc!");
-		process.exit();
 	}
 
 	// grab the intersection of the two sets
